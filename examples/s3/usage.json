@@ -1,0 +1,7 @@
+{
+  "schema": "jieheng.usage.v1",
+  "customer": "capacity-planning-example",
+  "metric": "storage-gb-month",
+  "period": "hypothetical-month",
+  "quantity": "60000"
+}

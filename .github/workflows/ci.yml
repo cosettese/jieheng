@@ -12,6 +12,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
+      - uses: ilammy/msvc-dev-cmd@v1
+        if: runner.os == 'Windows'
       - uses: hustcer/setup-moonbit@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -25,3 +27,5 @@ jobs:
       - run: moon run cmd/demo --target wasm-gc
       - run: moon run cmd/demo --target js
       - run: moon run cmd/demo --target native
+      - run: moon run scripts/e2e.mbtx wasm
+      - run: moon run scripts/e2e.mbtx native

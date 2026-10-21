@@ -8,9 +8,17 @@ import {
 // Values
 pub fn compile_plan(id~ : String, version~ : String, metric~ : String, unit~ : String, currency~ : String, tiers~ : ArrayView[Tier]) -> Plan raise PricingError
 
+pub fn decode_plan(String) -> Plan raise PricingError
+
+pub fn decode_usage(String) -> Usage raise PricingError
+
+pub fn encode_plan(Plan) -> String
+
+pub fn encode_usage(Usage) -> String raise PricingError
+
 pub fn rate(Plan, Usage) -> Calculation raise PricingError
 
-pub fn settle(Calculation, scale~ : Int, rounding~ : Rounding) -> Settlement raise PricingError
+pub fn settle(Calculation, scale~ : Int32, rounding~ : Rounding) -> Settlement raise PricingError
 
 // Errors
 pub(all) suberror PricingError {
@@ -35,7 +43,7 @@ pub fn Calculation::not_equal(Self, Self) -> Bool
 pub fn Calculation::to_repr(Self) -> @debug.Repr
 
 pub(all) struct Line {
-  tier : Int
+  tier : Int32
   from_exclusive : String
   to_inclusive : String
   quantity : String
@@ -62,7 +70,7 @@ pub fn Rounding::to_repr(Self) -> @debug.Repr
 
 pub(all) struct Settlement {
   currency : String
-  scale : Int
+  scale : Int32
   rounding : Rounding
   minor_units : String
   amount : String

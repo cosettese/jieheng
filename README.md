@@ -7,7 +7,8 @@
 - 任意 1–1024 档渐进式计价（graduated）：每档只对落入该档的用量收费，支持免费档；最终档必须无上限。
 - 标准库 BigInt 精确运算，价格最多 30 位整数和 18 位小数，用量最多 30 位非负整数；不经过浮点数。
 - 分档明细与合计；显式选择 0–18 位结算精度，支持 HalfEven、HalfUp、Down、Up，保留舍入差额。
-- Wasm、Wasm-GC、JavaScript、Native 使用同一个纯计算库，无网络、文件系统或第三方依赖。
+- 严格版本化 JSON 价目表与用量交换，拒绝未知字段和重复键；文件计价工具与公开 Stripe/AWS 价格示例。
+- Wasm、Wasm-GC、JavaScript、Native 使用同一个纯计算库，仅依赖标准库；文件工具使用 `moonbitlang/async`，支持 Wasm 和 Native。
 
 ## 使用
 
@@ -55,11 +56,11 @@ let settlement = @jieheng.settle(calculation, scale=2, rounding=HalfEven)
 
 ## 后续路线
 
-下一步提供严格 JSON 价目表/用量交换与文件计价工具，再提供计算凭证和独立核验。之后才考虑独立的 volume 定价模式与价格变更比较。这里列出的后续能力均未实现。
+下一步提供计算凭证和独立核验。之后才考虑独立的 volume 定价模式与价格变更比较。这里列出的后续能力均未实现。
 
 ## 开发与验证
 
-使用 `moon.mod` / `moon.pkg`。开发工具链：MoonBit v0.10.14，moon 0.1.20260920（官方 2026-09-21 稳定版本说明对应的编译器版本）。CI 在 Linux、Windows、macOS 执行四种后端测试和示例。CI 配置代表预期覆盖，具体运行结果以 Actions 为准。
+使用 `moon.mod` / `moon.pkg`。当前验证工具链：稳定版 MoonBit v0.10.16+b1a0e846e，moon 0.1.20261020。CI 在 Linux、Windows、macOS 执行四种后端测试和示例。CI 配置代表预期覆盖，具体运行结果以 Actions 为准。
 
 ```text
 moon fmt
@@ -71,3 +72,5 @@ moon test --target all --deny-warn
 测试包含边界前后值、零用量、免费档、分配守恒、逐单位独立参考计算、18 位小数、超大整数、四种舍入规则、畸形输入、失败后恢复、输入数组隔离和确定性。
 
 Apache-2.0；依赖和示例来源见 [SOURCES.md](SOURCES.md)。
+
+完整文件工作流、JSON 格式与预期输出见 [docs/formats.md](docs/formats.md)。真实 S3 价格快照的区域、SKU、发布时间、单位和估价限制见 [examples/s3/README.md](examples/s3/README.md)。运行 `moon run scripts/e2e.mbtx wasm` 可核对两个公开案例、错误退出和失败后恢复。

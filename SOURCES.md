@@ -5,9 +5,13 @@ Checked on 2026-10-21. Project source is provided under Apache-2.0. No upstream 
 | Resource | Use | License / status |
 | --- | --- | --- |
 | [MoonBit core](https://github.com/moonbitlang/core) | Standard-library BigInt, strings, collections, tests | Apache-2.0; distributed with the toolchain |
+| [MoonBit async v0.22.5](https://github.com/moonbitlang/async) | File CLI and `.mbtx` process automation only | Apache-2.0; pinned dependency, not vendored |
+| [MoonBit x v0.5.5](https://github.com/moonbitlang/x) | CLI process exit status (`sys`) only | Apache-2.0; pinned dependency, not vendored |
+| [AWS S3 public price list](https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonS3/current/us-east-1/index.json) | Real Standard storage pricing snapshot | Numerical facts only; AWS material is not relicensed. Exact product and provenance in `examples/s3/README.md` |
 | [Stripe tiered pricing documentation](https://docs.stripe.com/subscriptions/pricing-models/tiered-pricing) | Numerical graduated example: bounds 5, 10, infinity; prices 7, 6.5, 6; totals 41.50, 127.50, 157.50 | Public documentation; numerical facts transcribed, no documentation prose or implementation copied; not relicensed |
-| [MoonBit release notes](https://www.moonbitlang.com/updates/) | 2026-09-21 release; installed compiler v0.10.14 | Documentation reference only |
+| [MoonBit official stable distribution](https://www.moonbitlang.com/download/) | Stable compiler v0.10.16+b1a0e846e and moon 0.1.20261020, observed from official `binaries/latest` on 2026-10-21 | Build tools, not vendored |
 | [setup-moonbit](https://github.com/hustcer/setup-moonbit) | CI toolchain setup action | External action, not vendored; upstream license applies |
+| [msvc-dev-cmd](https://github.com/ilammy/msvc-dev-cmd) | Windows CI C/C++ compiler environment | MIT; external action, not vendored |
 
 The customer and period labels in tests and the demo are synthetic. The published price example is a reproducible teaching case, not a live price quotation or customer usage dataset.
 

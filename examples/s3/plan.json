@@ -1,0 +1,14 @@
+{
+  "schema": "jieheng.plan.v1",
+  "id": "s3-standard-us-east-1-storage",
+  "version": "aws-20261015173540",
+  "metric": "storage-gb-month",
+  "unit": "GB-Mo",
+  "currency": "USD",
+  "mode": "graduated",
+  "tiers": [
+    { "up_to": "51200", "unit_price": "0.023" },
+    { "up_to": "512000", "unit_price": "0.022" },
+    { "up_to": null, "unit_price": "0.021" }
+  ]
+}

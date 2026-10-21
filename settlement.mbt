@@ -3,7 +3,7 @@
 /// Currency is a label, not an ISO currency database; callers choose the scale.
 pub fn settle(
   calculation : Calculation,
-  scale~ : Int,
+  scale~ : Int32,
   rounding~ : Rounding,
 ) -> Settlement raise PricingError {
   if scale < 0 || scale > 18 {

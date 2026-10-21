@@ -1,4 +1,5 @@
 /_build/
 /.moon/
+/.mooncakes/
 /.repos/
 /target/

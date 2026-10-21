@@ -41,7 +41,7 @@ pub(all) struct Usage {
 ///|
 /// Exact allocation for one occupied tier. No line-level monetary rounding.
 pub(all) struct Line {
-  tier : Int
+  tier : Int32
   from_exclusive : String
   to_inclusive : String
   quantity : String
@@ -75,7 +75,7 @@ pub(all) enum Rounding {
 /// delta = amount - exact total, and can be negative.
 pub(all) struct Settlement {
   currency : String
-  scale : Int
+  scale : Int32
   rounding : Rounding
   minor_units : String
   amount : String

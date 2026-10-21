@@ -1,0 +1,15 @@
+supported_targets = "wasm+native"
+
+import {
+  "cosettese/jieheng",
+  "moonbitlang/async",
+  "moonbitlang/async/fs",
+  "moonbitlang/async/stdio",
+  "moonbitlang/core/env",
+  "moonbitlang/core/buffer",
+  "moonbitlang/core/encoding/utf8",
+  "moonbitlang/core/string",
+  "moonbitlang/x/sys",
+}
+
+pkgtype(kind: "executable")

@@ -11,3 +11,8 @@ license = "Apache-2.0"
 keywords = [ "pricing", "graduated", "billing", "decimal" ]
 
 description = "Exact graduated usage pricing with explicit settlement and verifiable breakdowns."
+
+import {
+  "moonbitlang/async@0.22.5",
+  "moonbitlang/x@0.5.5",
+}

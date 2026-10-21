@@ -1,0 +1,14 @@
+{
+  "schema": "jieheng.plan.v1",
+  "id": "stripe-typographic-graduated",
+  "version": "docs-2026-10-21",
+  "metric": "fonts",
+  "unit": "font",
+  "currency": "USD",
+  "mode": "graduated",
+  "tiers": [
+    { "up_to": "5", "unit_price": "7" },
+    { "up_to": "10", "unit_price": "6.5" },
+    { "up_to": null, "unit_price": "6" }
+  ]
+}

@@ -1,0 +1,32 @@
+import {
+  "moonbitlang/async@0.22.5",
+  "moonbitlang/async@0.22.5/shell",
+  "moonbitlang/core/env",
+}
+
+async fn main {
+  let args = @env.args()
+  let target = if args.length() == 2 { args[1] } else { "wasm" }
+  for (fixture, expected) in [("stripe", "USD 127.50"), ("s3", "USD 1371.20")] {
+    let output = @shell.Cmd("moon", [
+      "run", "cmd/rate", "--target", target, "--",
+      "examples/\{fixture}/plan.json", "examples/\{fixture}/usage.json", "2", "half-even",
+    ]).output()
+    if output.exit_code() != 0 {
+      fail("\{fixture} CLI failed: \{output.stderr()} \{output.stdout()}")
+    }
+    if !output.stdout().contains("settled: \{expected} (delta 0)") {
+      fail("unexpected \{fixture} result: \{output.stdout()}")
+    }
+  }
+  let failed = @shell.Cmd("moon", ["run", "cmd/rate", "--target", target, "--",
+    "examples/stripe/plan.json", "examples/s3/usage.json", "2", "half-even"]).output()
+  if failed.exit_code() == 0 || failed.stdout() != "" || !failed.stderr().contains("metric") {
+    fail("mismatched metric must fail without stdout")
+  }
+  let recovery = @shell.Cmd("moon", ["run", "cmd/rate", "--target", target, "--",
+    "examples/stripe/plan.json", "examples/stripe/usage.json", "2", "half-even"]).output()
+  recovery.check()
+  if !recovery.stdout().contains("USD 127.50") { fail("recovery failed") }
+  println("file workflow verified on \{target}")
+}
