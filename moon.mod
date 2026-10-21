@@ -1,6 +1,6 @@
 name = "cosettese/jieheng"
 
-version = "0.1.0"
+version = "0.2.0"
 
 readme = "README.md"
 
@@ -10,7 +10,7 @@ license = "Apache-2.0"
 
 keywords = [ "pricing", "graduated", "billing", "decimal" ]
 
-description = "Exact graduated usage pricing with explicit settlement and verifiable breakdowns."
+description = "Exact graduated and volume usage pricing with explicit settlement and verifiable breakdowns."
 
 import {
   "moonbitlang/async@0.22.5",

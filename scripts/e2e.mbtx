@@ -8,7 +8,7 @@ import {
 async fn main {
   let args = @env.args()
   let target = if args.length() == 2 { args[1] } else { "wasm" }
-  for (fixture, expected) in [("stripe", "USD 127.50"), ("s3", "USD 1371.20")] {
+  for (fixture, expected) in [("stripe", "USD 127.50"), ("s3", "USD 1371.20"), ("stripe-volume", "USD 120.00")] {
     let output = @shell.Cmd("moon", [
       "run", "cmd/rate", "--target", target, "--",
       "examples/\{fixture}/plan.json", "examples/\{fixture}/usage.json", "2", "half-even",

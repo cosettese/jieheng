@@ -27,7 +27,7 @@ test "unknown unsupported and duplicate fields fail without data loss" {
     text in [
       plan_document().replace(
         old="\"mode\":\"graduated\"",
-        new="\"mode\":\"volume\"",
+        new="\"mode\":\"unsupported\"",
       ),
       plan_document().replace(
         old="\"mode\":\"graduated\"",

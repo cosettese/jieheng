@@ -7,7 +7,16 @@ pub fn decode_plan(text : String) -> Plan raise PricingError {
     "plan",
   )
   expect_value(object, "schema", "jieheng.plan.v1", "plan")
-  expect_value(object, "mode", "graduated", "plan")
+  let mode = match text_value(object["mode"], "plan.mode") {
+    "graduated" => Graduated
+    "volume" => Volume
+    _ =>
+      raise Invalid(
+        code="unsupported",
+        path="plan.mode",
+        message="choose graduated or volume",
+      )
+  }
   guard object["tiers"] is Array(items) else {
     raise Invalid(code="type", path="plan.tiers", message="expected an array")
   }
@@ -34,6 +43,7 @@ pub fn decode_plan(text : String) -> Plan raise PricingError {
     unit=text_value(object["unit"], "plan.unit"),
     currency=text_value(object["currency"], "plan.currency"),
     tiers~,
+    mode~,
   )
 }
 
@@ -60,7 +70,15 @@ fn plan_json(plan : Plan) -> Json {
     "metric": plan.metric,
     "unit": plan.unit,
     "currency": plan.currency,
-    "mode": "graduated",
+    "mode": pricing_mode_name(plan.mode),
     "tiers": tiers,
+  }
+}
+
+///|
+fn pricing_mode_name(mode : PricingMode) -> String {
+  match mode {
+    Graduated => "graduated"
+    Volume => "volume"
   }
 }

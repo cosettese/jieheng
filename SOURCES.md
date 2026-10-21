@@ -17,6 +17,8 @@ The customer and period labels in tests and the demo are synthetic. The publishe
 
 ## Ecosystem boundary
 
+The volume example added on 2026-10-22 uses the same Stripe tutorial's numerical rules: quantities 6, 20 and 25 cost 39, 120 and 150 under volume pricing. Only these numerical facts and domain semantics were transcribed; no source code, test suite or prose was copied. The original S3 price snapshot remains the observation from 2026-10-21.
+
 The research baseline is the Mooncakes registry and public sources checked on 2026-10-21. Searches included `pricing`, `billing`, `tier`, `rate`, `cost`, `money`, `freight`, `invoice`, and Chinese equivalents. This is evidence for a complementary scope, not proof that no competing project exists.
 
 - [moonmoney](https://github.com/haol-05/moonmoney), Apache-2.0: currency/minor-unit money, allocation, rounding, rates and FX. Jieheng supplies cumulative tier allocation and keeps sub-minor-unit prices exact until settlement.

@@ -1,5 +1,6 @@
 ///|
-/// Compile graduated tiers and detach them from caller-owned arrays.
+/// Compile tiers and detach them from caller-owned arrays.
+/// The default mode preserves graduated pricing for existing callers.
 /// Bounds must increase strictly, and only the last bound must be None.
 pub fn compile_plan(
   id~ : String,
@@ -8,6 +9,7 @@ pub fn compile_plan(
   unit~ : String,
   currency~ : String,
   tiers~ : ArrayView[Tier],
+  mode~ : PricingMode = Graduated,
 ) -> Plan raise PricingError {
   label(id, "plan.id")
   label(version, "plan.version")
@@ -70,7 +72,13 @@ pub fn compile_plan(
       price: decimal(tier.unit_price, path + ".unit_price"),
     })
   }
-  { id, version, metric, unit, currency, tiers: compiled, }
+  { id, version, metric, unit, currency, mode, tiers: compiled, }
+}
+
+///|
+/// Return the plan's explicit pricing semantics.
+pub fn Plan::mode(self : Plan) -> PricingMode {
+  self.mode
 }
 
 ///|

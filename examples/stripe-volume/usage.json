@@ -1,0 +1,7 @@
+{
+  "schema": "jieheng.usage.v1",
+  "customer": "typographic-example",
+  "metric": "fonts",
+  "period": "documentation-example",
+  "quantity": "20"
+}

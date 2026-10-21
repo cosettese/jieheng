@@ -17,6 +17,10 @@ pub fn verify_calculation(
       "identity", "calculation", "plan, version, currency, unit and usage must match trusted inputs",
     )
   }
+  if plan.mode == Volume {
+    verify_volume(plan, quantity, calculation)
+    return
+  }
   if calculation.lines.length() > plan.tiers.length() {
     invalid("partition", "calculation.lines", "more lines than price tiers")
   }

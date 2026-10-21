@@ -22,7 +22,7 @@ Change the report's exact total from `1371.2` to `0`: verification fails with `t
 
 ## Library API
 
-- `verify_calculation(plan, usage, calculation)` independently checks identity, a positive contiguous partition from zero to the trusted quantity, correct tier boundaries, per-line multiplication, and the exact sum. It does not call `rate`.
+- `verify_calculation(plan, usage, calculation)` independently checks identity and the trusted plan's mode. Graduated pricing requires a positive contiguous partition from zero to the trusted quantity, correct tier boundaries, per-line multiplication, and the exact sum. Volume pricing requires exactly one positive-usage line, a selected tier whose interval contains the whole quantity, and that tier's price applied to all units. Zero usage requires an empty breakdown and zero total. It does not call `rate`.
 - `verify_settlement(calculation, settlement, scale~, rounding~)` checks the supplied trusted policy and the rounding error interval, fixed decimal formatting, minor units and delta. It does not call `settle`. Used alone, it verifies settlement arithmetic only; it does not authenticate the calculation.
 - `verify_evidence(plan, usage, evidence, scale~, rounding~)` performs both checks. Use this before accepting external evidence.
 - `encode_evidence` serializes all typed record fields in a stable order. `decode_evidence` validates the versioned shape, field types, resource limits, duplicate keys and unsupported fields. Decoding alone does not mean that a report is semantically valid. The decoder intentionally preserves forged claims so the verifier can identify the inconsistency.

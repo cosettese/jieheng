@@ -4,7 +4,7 @@ The library accepts only versioned, explicitly supported fields. JSON inputs are
 
 ## Plan v1
 
-`schema`, `id`, `version`, `metric`, `unit`, `currency`, `mode`, `tiers` are all required. `schema` must be `jieheng.plan.v1`, and `mode` must be `graduated`.
+`schema`, `id`, `version`, `metric`, `unit`, `currency`, `mode`, `tiers` are all required. `schema` must be `jieheng.plan.v1`, and `mode` must be `graduated` or `volume`. Unrecognized modes fail; they are never treated as a default.
 
 Each tier has exactly `up_to` and `unit_price`. A bound is a canonical integer string; `null` means unbounded. Every price is a plain nonnegative decimal string. The last tier must be unbounded; earlier bounds must increase strictly from zero. There are 1–1024 tiers. See [the complete example](../examples/stripe/plan.json).
 

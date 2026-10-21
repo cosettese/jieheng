@@ -19,13 +19,27 @@ priv struct CompiledTier {
 }
 
 ///|
-/// Validated, detached snapshot of a graduated price plan.
+/// Pricing semantics chosen explicitly in a plan.
+pub(all) enum PricingMode {
+  Graduated
+  Volume
+} derive(Debug, Eq)
+
+///|
+pub extend PricingMode with Debug::{to_repr}
+
+///|
+pub extend PricingMode with Eq::{equal, not_equal}
+
+///|
+/// Validated, detached snapshot of a price plan.
 pub struct Plan {
   priv id : String
   priv version : String
   priv metric : String
   priv unit : String
   priv currency : String
+  priv mode : PricingMode
   priv tiers : Array[CompiledTier]
 }
 

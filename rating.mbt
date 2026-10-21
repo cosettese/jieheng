@@ -1,5 +1,5 @@
 ///|
-/// Rate a cumulative quantity using marginal tiers; never rounds individual lines.
+/// Rate cumulative usage according to the plan mode; never rounds individual lines.
 ///
 /// ```mbt check
 /// test {
@@ -28,6 +28,37 @@ pub fn rate(plan : Plan, usage : Usage) -> Calculation raise PricingError {
   let lines = []
   let mut lower = 0N
   let mut total = 0N
+  if plan.mode == Volume {
+    if quantity > 0N {
+      for index, tier in plan.tiers {
+        let selected = match tier.up_to {
+          Some(bound) => quantity <= bound
+          None => true
+        }
+        if selected {
+          total = quantity * tier.price
+          lines.push({
+            tier: index,
+            from_exclusive: "0",
+            to_inclusive: quantity.to_string(),
+            quantity: quantity.to_string(),
+            unit_price: format_atoms(tier.price),
+            subtotal: format_atoms(total),
+          })
+          break
+        }
+      }
+    }
+    return {
+      plan_id: plan.id,
+      plan_version: plan.version,
+      currency: plan.currency,
+      unit: plan.unit,
+      usage,
+      lines,
+      total: format_atoms(total),
+    }
+  }
   for index, tier in plan.tiers {
     if lower >= quantity {
       break
