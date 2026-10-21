@@ -17,6 +17,8 @@ The customer and period labels in tests and the demo are synthetic. The publishe
 
 ## Ecosystem boundary
 
+The cohort fixture added on 2026-10-22 combines the same Stripe public numerical rules at quantities 6, 20 and 25 with synthetic customer labels. The sums and regression cases were calculated for this project; no external customer data or test suite was copied.
+
 The volume example added on 2026-10-22 uses the same Stripe tutorial's numerical rules: quantities 6, 20 and 25 cost 39, 120 and 150 under volume pricing. Only these numerical facts and domain semantics were transcribed; no source code, test suite or prose was copied. The original S3 price snapshot remains the observation from 2026-10-21.
 
 The research baseline is the Mooncakes registry and public sources checked on 2026-10-21. Searches included `pricing`, `billing`, `tier`, `rate`, `cost`, `money`, `freight`, `invoice`, and Chinese equivalents. This is evidence for a complementary scope, not proof that no competing project exists.

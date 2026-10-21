@@ -1,0 +1,1 @@
+{"schema":"jieheng.cohort-usage.v1","usages":[{"schema":"jieheng.usage.v1","customer":"small","metric":"fonts","period":"2026-10","quantity":"6"},{"schema":"jieheng.usage.v1","customer":"growing","metric":"fonts","period":"2026-10","quantity":"20"},{"schema":"jieheng.usage.v1","customer":"large","metric":"fonts","period":"2026-10","quantity":"25"}]}

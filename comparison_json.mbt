@@ -1,6 +1,11 @@
 ///|
 /// Encode all typed fields in deterministic order; verify before accepting data.
 pub fn encode_comparison(report : Comparison) -> String {
+  comparison_json(report).stringify()
+}
+
+///|
+fn comparison_json(report : Comparison) -> Json {
   let json : Json = {
     "schema": "jieheng.comparison.v1",
     "baseline": evidence_json(report.baseline),
@@ -8,14 +13,19 @@ pub fn encode_comparison(report : Comparison) -> String {
     "exact_delta": report.exact_delta,
     "settled_delta": report.settled_delta,
   }
-  json.stringify()
+  json
 }
 
 ///|
 /// Strict structural decoder; semantic acceptance requires verify_comparison.
 pub fn decode_comparison(text : String) -> Comparison raise PricingError {
+  comparison_from_json(parse_document(text))
+}
+
+///|
+fn comparison_from_json(value : Json) -> Comparison raise PricingError {
   let object = fields(
-    parse_document(text),
+    value,
     ["schema", "baseline", "candidate", "exact_delta", "settled_delta"],
     "comparison",
   )

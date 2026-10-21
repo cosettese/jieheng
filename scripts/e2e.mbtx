@@ -98,5 +98,24 @@ async fn main {
   if comparison_recovery.exit_code() != 0 || comparison_recovery.stdout() != compared.stdout() {
     fail("comparison must recover after invalid input")
   }
+  let cohort_args = ["run", "cmd/cohort", "--target", target, "--", "examples/stripe/plan.json", "examples/stripe-volume/plan.json", "examples/cohort/usages.json", "2", "half-even"]
+  let cohort = @shell.Cmd("moon", cohort_args + ["--json"]).output()
+  let cohort_golden = @fs.read_file("examples/cohort/report.json").text()
+  if cohort.exit_code() != 0 || cohort.stdout().trim() != cohort_golden.trim() {
+    fail("cohort golden mismatch: \{cohort.stderr()}")
+  }
+  let cohort_verified = @shell.Cmd("moon", cohort_args + ["--verify", "examples/cohort/report.json"]).output()
+  if cohort_verified.exit_code() != 0 || cohort_verified.stdout() != "verified cohort: 3 snapshots; settled delta -17.5\n" {
+    fail("cohort verification failed: \{cohort_verified.stderr()}")
+  }
+  let cohort_tampered = cohort_golden.replace(old="\"settled_delta\":\"-17.5\"", new="\"settled_delta\":\"0\"")
+  if cohort_tampered == cohort_golden { fail("cohort tampering did not change fixture") }
+  @fs.write_file(tampered_path, cohort_tampered)
+  let cohort_bad = @shell.Cmd("moon", cohort_args + ["--verify", tampered_path]).output()
+  if cohort_bad.exit_code() == 0 || cohort_bad.stdout() != "" || !cohort_bad.stderr().contains("cohort.totals") {
+    fail("cohort tampering must be refused")
+  }
+  let cohort_recovery = @shell.Cmd("moon", cohort_args + ["--json"]).output()
+  if cohort_recovery.exit_code() != 0 || cohort_recovery.stdout() != cohort.stdout() { fail("cohort recovery failed") }
   println("file workflow verified on \{target}")
 }
