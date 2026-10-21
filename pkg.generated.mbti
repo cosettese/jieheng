@@ -16,6 +16,10 @@ pub fn compile_plan(id~ : String, version~ : String, metric~ : String, unit~ : S
 
 pub fn compile_schedule(ArrayView[EffectivePlan]) -> Schedule raise PricingError
 
+pub fn decode_budget(String) -> BudgetQuote raise PricingError
+
+pub fn decode_budget_request(String) -> BudgetRequest raise PricingError
+
 pub fn decode_charge(String) -> Charge raise PricingError
 
 pub fn decode_cohort(String) -> CohortComparison raise PricingError
@@ -41,6 +45,10 @@ pub fn decode_schedule(String) -> Schedule raise PricingError
 pub fn decode_scheduled(String) -> ScheduledEvidence raise PricingError
 
 pub fn decode_usage(String) -> Usage raise PricingError
+
+pub fn encode_budget(BudgetQuote) -> String raise PricingError
+
+pub fn encode_budget_request(BudgetRequest) -> String raise PricingError
 
 pub fn encode_charge(Charge) -> String raise PricingError
 
@@ -68,6 +76,8 @@ pub fn encode_scheduled(ScheduledEvidence) -> String raise PricingError
 
 pub fn encode_usage(Usage) -> String raise PricingError
 
+pub fn quote_budget(Plan, BudgetRequest, scale~ : Int32, rounding~ : Rounding) -> BudgetQuote raise PricingError
+
 pub fn rate(Plan, Usage) -> Calculation raise PricingError
 
 pub fn rate_charge(Plan, Usage, minimum~ : String, zero_usage~ : ZeroUsageMinimum, scale~ : Int32, rounding~ : Rounding) -> Charge raise PricingError
@@ -81,6 +91,8 @@ pub fn rate_scheduled(Schedule, String, Usage, scale~ : Int32, rounding~ : Round
 pub fn select_plan(Schedule, String) -> Plan raise PricingError
 
 pub fn settle(Calculation, scale~ : Int32, rounding~ : Rounding) -> Settlement raise PricingError
+
+pub fn verify_budget(Plan, BudgetRequest, BudgetQuote, scale~ : Int32, rounding~ : Rounding) -> Unit raise PricingError
 
 pub fn verify_calculation(Plan, Usage, Calculation) -> Unit raise PricingError
 
@@ -109,6 +121,24 @@ pub fn PricingError::not_equal(Self, Self) -> Bool
 pub fn PricingError::to_repr(Self) -> @debug.Repr
 
 // Types and methods
+pub(all) struct BudgetQuote {
+  request : BudgetRequest
+  evidence : Evidence
+} derive(Eq, @debug.Debug)
+pub fn BudgetQuote::equal(Self, Self) -> Bool
+pub fn BudgetQuote::not_equal(Self, Self) -> Bool
+pub fn BudgetQuote::to_repr(Self) -> @debug.Repr
+
+pub(all) struct BudgetRequest {
+  customer : String
+  period : String
+  budget : String
+  limit : String
+} derive(Eq, @debug.Debug)
+pub fn BudgetRequest::equal(Self, Self) -> Bool
+pub fn BudgetRequest::not_equal(Self, Self) -> Bool
+pub fn BudgetRequest::to_repr(Self) -> @debug.Repr
+
 pub(all) struct Calculation {
   plan_id : String
   plan_version : String

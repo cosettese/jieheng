@@ -179,5 +179,20 @@ async fn main {
   if packages_bad.exit_code() == 0 || packages_bad.stdout() != "" || !packages_bad.stderr().contains("capacity") { fail("package capacity forgery must fail") }
   let packages_recovery = @shell.Cmd("moon", package_args + ["--json"]).output()
   if packages_recovery.exit_code() != 0 || packages_recovery.stdout() != packages.stdout() { fail("package recovery failed") }
+  let budget_args = ["run", "cmd/budget", "--target", target, "--", "examples/s3/plan.json", "examples/budget/request.json", "2", "half-even"]
+  let budget = @shell.Cmd("moon", budget_args + ["--json"]).output()
+  let budget_golden = @fs.read_file("examples/budget/quote.json").text()
+  if budget.exit_code() != 0 || budget.stdout().trim() != budget_golden.trim() { fail("budget quote mismatch: \{budget.stderr()}") }
+  let budget_plain = @shell.Cmd("moon", budget_args).output()
+  if budget_plain.exit_code() != 0 || !budget_plain.stdout().contains("maximum quantity: 65854\n") || !budget_plain.stdout().contains("settled: USD 1499.99") { fail("budget plain output failed") }
+  let budget_verified = @shell.Cmd("moon", budget_args + ["--verify", "examples/budget/quote.json"]).output()
+  if budget_verified.exit_code() != 0 || budget_verified.stdout() != "verified budget: quantity 65854\n" { fail("budget verification failed") }
+  let raised_budget = budget_golden.replace(old="\"budget\":\"1500\"", new="\"budget\":\"1501\"")
+  if raised_budget == budget_golden { fail("budget request fixture did not change") }
+  @fs.write_file(tampered_path, raised_budget)
+  let substituted_budget = @shell.Cmd("moon", budget_args + ["--verify", tampered_path]).output()
+  if substituted_budget.exit_code() == 0 || substituted_budget.stdout() != "" || !substituted_budget.stderr().contains("budget.request") { fail("untrusted budget substitution must fail") }
+  let budget_recovery = @shell.Cmd("moon", budget_args + ["--json"]).output()
+  if budget_recovery.exit_code() != 0 || budget_recovery.stdout() != budget.stdout() { fail("budget recovery failed") }
   println("file workflow verified on \{target}")
 }
