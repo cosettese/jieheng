@@ -22,6 +22,10 @@ pub fn decode_comparison(String) -> Comparison raise PricingError
 
 pub fn decode_evidence(String) -> Evidence raise PricingError
 
+pub fn decode_invoice(String) -> Invoice raise PricingError
+
+pub fn decode_invoice_input(String) -> Array[ChargeInput] raise PricingError
+
 pub fn decode_plan(String) -> Plan raise PricingError
 
 pub fn decode_usage(String) -> Usage raise PricingError
@@ -36,6 +40,10 @@ pub fn encode_comparison(Comparison) -> String
 
 pub fn encode_evidence(Evidence) -> String
 
+pub fn encode_invoice(Invoice) -> String raise PricingError
+
+pub fn encode_invoice_input(ArrayView[ChargeInput]) -> String raise PricingError
+
 pub fn encode_plan(Plan) -> String
 
 pub fn encode_usage(Usage) -> String raise PricingError
@@ -43,6 +51,8 @@ pub fn encode_usage(Usage) -> String raise PricingError
 pub fn rate(Plan, Usage) -> Calculation raise PricingError
 
 pub fn rate_charge(Plan, Usage, minimum~ : String, zero_usage~ : ZeroUsageMinimum, scale~ : Int32, rounding~ : Rounding) -> Charge raise PricingError
+
+pub fn rate_invoice(ArrayView[ChargeInput], scale~ : Int32, rounding~ : Rounding) -> Invoice raise PricingError
 
 pub fn settle(Calculation, scale~ : Int32, rounding~ : Rounding) -> Settlement raise PricingError
 
@@ -55,6 +65,8 @@ pub fn verify_cohort(Plan, Plan, ArrayView[Usage], CohortComparison, scale~ : In
 pub fn verify_comparison(Plan, Plan, Usage, Comparison, scale~ : Int32, rounding~ : Rounding) -> Unit raise PricingError
 
 pub fn verify_evidence(Plan, Usage, Evidence, scale~ : Int32, rounding~ : Rounding) -> Unit raise PricingError
+
+pub fn verify_invoice(ArrayView[ChargeInput], Invoice, scale~ : Int32, rounding~ : Rounding) -> Unit raise PricingError
 
 pub fn verify_settlement(Calculation, Settlement, scale~ : Int32, rounding~ : Rounding) -> Unit raise PricingError
 
@@ -92,6 +104,13 @@ pub fn Charge::equal(Self, Self) -> Bool
 pub fn Charge::not_equal(Self, Self) -> Bool
 pub fn Charge::to_repr(Self) -> @debug.Repr
 
+pub(all) struct ChargeInput {
+  plan : Plan
+  usage : Usage
+  minimum : String
+  zero_usage : ZeroUsageMinimum
+}
+
 pub(all) struct CohortComparison {
   rows : Array[Comparison]
   baseline_exact : String
@@ -122,6 +141,24 @@ pub(all) struct Evidence {
 pub fn Evidence::equal(Self, Self) -> Bool
 pub fn Evidence::not_equal(Self, Self) -> Bool
 pub fn Evidence::to_repr(Self) -> @debug.Repr
+
+pub(all) struct Invoice {
+  customer : String
+  period : String
+  currency : String
+  charges : Array[Charge]
+  usage_total : String
+  top_up : String
+  total : String
+  scale : Int32
+  rounding : Rounding
+  minor_units : String
+  amount : String
+  delta : String
+} derive(Eq, @debug.Debug)
+pub fn Invoice::equal(Self, Self) -> Bool
+pub fn Invoice::not_equal(Self, Self) -> Bool
+pub fn Invoice::to_repr(Self) -> @debug.Repr
 
 pub(all) struct Line {
   tier : Int32

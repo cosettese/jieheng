@@ -132,5 +132,26 @@ async fn main {
   if wrong_minimum.exit_code() == 0 || wrong_minimum.stdout() != "" || !wrong_minimum.stderr().contains("policy") { fail("minimum policy substitution must fail") }
   let charge_recovery = @shell.Cmd("moon", charge_args + ["--json"]).output()
   if charge_recovery.exit_code() != 0 || charge_recovery.stdout() != charge.stdout() { fail("minimum charge recovery failed") }
+  let invoice_args = ["run", "cmd/invoice", "--target", target, "--", "examples/invoice/input.json", "2", "half-even"]
+  let invoice = @shell.Cmd("moon", invoice_args + ["--json"]).output()
+  let invoice_golden = @fs.read_file("examples/invoice/invoice.json").text()
+  if invoice.exit_code() != 0 || invoice.stdout().trim() != invoice_golden.trim() { fail("invoice golden mismatch: \{invoice.stderr()}") }
+  let invoice_plain = @shell.Cmd("moon", invoice_args).output()
+  if invoice_plain.exit_code() != 0 || !invoice_plain.stdout().contains("settled: USD 1627.50 (rounding delta 0)") { fail("invoice plain output failed") }
+  let invoice_verified = @shell.Cmd("moon", invoice_args + ["--verify", "examples/invoice/invoice.json"]).output()
+  if invoice_verified.exit_code() != 0 || invoice_verified.stdout() != "verified invoice: USD 1627.50\n" { fail("invoice verification failed") }
+  let invoice_tampered = invoice_golden.replace(old="\"amount\":\"1627.50\"", new="\"amount\":\"1627.51\"")
+  if invoice_tampered == invoice_golden { fail("invoice tampering did not change fixture") }
+  @fs.write_file(tampered_path, invoice_tampered)
+  let invoice_bad = @shell.Cmd("moon", invoice_args + ["--verify", tampered_path]).output()
+  if invoice_bad.exit_code() == 0 || invoice_bad.stdout() != "" || !invoice_bad.stderr().contains("invoice.totals") { fail("invoice tampering must be refused") }
+  let invoice_input = @fs.read_file("examples/invoice/input.json").text()
+  let mixed_customer = invoice_input.replace(old="\"quantity\":\"60000\"", new="\"quantity\":\"60000\",\"tax\":\"1\"")
+  if mixed_customer == invoice_input { fail("invoice unsupported field insertion failed") }
+  @fs.write_file(tampered_path, mixed_customer)
+  let unsupported = @shell.Cmd("moon", ["run", "cmd/invoice", "--target", target, "--", tampered_path, "2", "half-even"]).output()
+  if unsupported.exit_code() == 0 || unsupported.stdout() != "" || !unsupported.stderr().contains("tax") { fail("invoice unsupported nested fields must fail") }
+  let invoice_recovery = @shell.Cmd("moon", invoice_args + ["--json"]).output()
+  if invoice_recovery.exit_code() != 0 || invoice_recovery.stdout() != invoice.stdout() { fail("invoice recovery failed") }
   println("file workflow verified on \{target}")
 }

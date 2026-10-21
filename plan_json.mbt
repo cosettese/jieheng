@@ -1,8 +1,13 @@
 ///|
 /// Strict versioned JSON plan decoder. Unknown fields and duplicate keys fail.
 pub fn decode_plan(text : String) -> Plan raise PricingError {
+  plan_from_json(parse_document(text))
+}
+
+///|
+fn plan_from_json(value : Json) -> Plan raise PricingError {
   let object = fields(
-    parse_document(text),
+    value,
     ["schema", "id", "version", "metric", "unit", "currency", "mode", "tiers"],
     "plan",
   )
