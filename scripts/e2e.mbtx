@@ -117,5 +117,20 @@ async fn main {
   }
   let cohort_recovery = @shell.Cmd("moon", cohort_args + ["--json"]).output()
   if cohort_recovery.exit_code() != 0 || cohort_recovery.stdout() != cohort.stdout() { fail("cohort recovery failed") }
+  let charge_args = ["run", "cmd/charge", "--target", target, "--", "examples/s3/plan.json", "examples/s3/usage.json", "1500", "charge", "2", "half-even"]
+  let charge = @shell.Cmd("moon", charge_args + ["--json"]).output()
+  let charge_golden = @fs.read_file("examples/minimum/charge.json").text()
+  if charge.exit_code() != 0 || charge.stdout().trim() != charge_golden.trim() { fail("minimum charge golden mismatch: \{charge.stderr()}") }
+  let charge_verified = @shell.Cmd("moon", charge_args + ["--verify", "examples/minimum/charge.json"]).output()
+  if charge_verified.exit_code() != 0 || charge_verified.stdout() != "verified charge: USD 1500.00\n" { fail("minimum charge verification failed") }
+  let charge_tampered = charge_golden.replace(old="\"top_up\":\"128.8\"", new="\"top_up\":\"0\"")
+  if charge_tampered == charge_golden { fail("charge tampering did not change fixture") }
+  @fs.write_file(tampered_path, charge_tampered)
+  let charge_bad = @shell.Cmd("moon", charge_args + ["--verify", tampered_path]).output()
+  if charge_bad.exit_code() == 0 || charge_bad.stdout() != "" || !charge_bad.stderr().contains("charge.total") { fail("minimum top-up tampering must be refused") }
+  let wrong_minimum = @shell.Cmd("moon", ["run", "cmd/charge", "--target", target, "--", "examples/s3/plan.json", "examples/s3/usage.json", "1501", "charge", "2", "half-even", "--verify", "examples/minimum/charge.json"]).output()
+  if wrong_minimum.exit_code() == 0 || wrong_minimum.stdout() != "" || !wrong_minimum.stderr().contains("policy") { fail("minimum policy substitution must fail") }
+  let charge_recovery = @shell.Cmd("moon", charge_args + ["--json"]).output()
+  if charge_recovery.exit_code() != 0 || charge_recovery.stdout() != charge.stdout() { fail("minimum charge recovery failed") }
   println("file workflow verified on \{target}")
 }

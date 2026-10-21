@@ -6,13 +6,23 @@ pub fn settle(
   scale~ : Int32,
   rounding~ : Rounding,
 ) -> Settlement raise PricingError {
+  settle_total(calculation.currency, calculation.total, scale~, rounding~)
+}
+
+///|
+fn settle_total(
+  currency : String,
+  exact : String,
+  scale~ : Int32,
+  rounding~ : Rounding,
+) -> Settlement raise PricingError {
   if scale < 0 || scale > 18 {
     invalid(
       "scale", "settlement.scale", "choose an explicit scale between 0 and 18",
     )
   }
   // Totals can have up to 60 integer digits, unlike individual unit prices.
-  let total = amount_atoms(calculation.total, "calculation.total")
+  let total = amount_atoms(exact, "calculation.total")
   let divisor = BigInt::from_string("1" + "0".repeat(18 - scale))
   let quotient = total / divisor
   let remainder = total % divisor
@@ -41,7 +51,7 @@ pub fn settle(
     padded[:split].to_owned() + "." + padded[split:].to_owned()
   }
   {
-    currency: calculation.currency,
+    currency,
     scale,
     rounding,
     minor_units: digits,

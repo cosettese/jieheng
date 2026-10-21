@@ -64,8 +64,15 @@ pub fn encode_evidence(evidence : Evidence) -> String {
 
 ///|
 fn evidence_json(evidence : Evidence) -> Json {
-  let c = evidence.calculation
-  let s = evidence.settlement
+  {
+    "schema": "jieheng.evidence.v1",
+    "calculation": calculation_json(evidence.calculation),
+    "settlement": settlement_json(evidence.settlement),
+  }
+}
+
+///|
+fn calculation_json(c : Calculation) -> Json {
   let lines : Array[Json] = []
   for line in c.lines {
     lines.push({
@@ -77,27 +84,27 @@ fn evidence_json(evidence : Evidence) -> Json {
       "subtotal": line.subtotal,
     })
   }
-  let value : Json = {
-    "schema": "jieheng.evidence.v1",
-    "calculation": {
-      "plan_id": c.plan_id,
-      "plan_version": c.plan_version,
-      "currency": c.currency,
-      "unit": c.unit,
-      "usage": usage_json(c.usage),
-      "lines": lines,
-      "total": c.total,
-    },
-    "settlement": {
-      "currency": s.currency,
-      "scale": s.scale,
-      "rounding": rounding_name(s.rounding),
-      "minor_units": s.minor_units,
-      "amount": s.amount,
-      "delta": s.delta,
-    },
+  {
+    "plan_id": c.plan_id,
+    "plan_version": c.plan_version,
+    "currency": c.currency,
+    "unit": c.unit,
+    "usage": usage_json(c.usage),
+    "lines": lines,
+    "total": c.total,
   }
-  value
+}
+
+///|
+fn settlement_json(s : Settlement) -> Json {
+  {
+    "currency": s.currency,
+    "scale": s.scale,
+    "rounding": rounding_name(s.rounding),
+    "minor_units": s.minor_units,
+    "amount": s.amount,
+    "delta": s.delta,
+  }
 }
 
 ///|
@@ -110,15 +117,18 @@ pub fn decode_evidence(text : String) -> Evidence raise PricingError {
 fn evidence_from_json(value : Json) -> Evidence raise PricingError {
   let root = fields(value, ["schema", "calculation", "settlement"], "evidence")
   expect_value(root, "schema", "jieheng.evidence.v1", "evidence")
+  {
+    calculation: calculation_from_json(root["calculation"]),
+    settlement: settlement_from_json(root["settlement"]),
+  }
+}
+
+///|
+fn calculation_from_json(value : Json) -> Calculation raise PricingError {
   let c = fields(
-    root["calculation"],
+    value,
     ["plan_id", "plan_version", "currency", "unit", "usage", "lines", "total"],
     "calculation",
-  )
-  let s = fields(
-    root["settlement"],
-    ["currency", "scale", "rounding", "minor_units", "amount", "delta"],
-    "settlement",
   )
   guard c["lines"] is Array(items) else {
     raise Invalid(
@@ -153,25 +163,32 @@ fn evidence_from_json(value : Json) -> Evidence raise PricingError {
     })
   }
   {
-    calculation: {
-      plan_id: text_value(c["plan_id"], "calculation.plan_id"),
-      plan_version: text_value(c["plan_version"], "calculation.plan_version"),
-      currency: text_value(c["currency"], "calculation.currency"),
-      unit: text_value(c["unit"], "calculation.unit"),
-      usage: usage_from_json(c["usage"]),
-      lines,
-      total: text_value(c["total"], "calculation.total"),
-    },
-    settlement: {
-      currency: text_value(s["currency"], "settlement.currency"),
-      scale: small_integer(s["scale"], 18, "settlement.scale"),
-      rounding: rounding_from_name(
-        text_value(s["rounding"], "settlement.rounding"),
-      ),
-      minor_units: text_value(s["minor_units"], "settlement.minor_units"),
-      amount: text_value(s["amount"], "settlement.amount"),
-      delta: text_value(s["delta"], "settlement.delta"),
-    },
+    plan_id: text_value(c["plan_id"], "calculation.plan_id"),
+    plan_version: text_value(c["plan_version"], "calculation.plan_version"),
+    currency: text_value(c["currency"], "calculation.currency"),
+    unit: text_value(c["unit"], "calculation.unit"),
+    usage: usage_from_json(c["usage"]),
+    lines,
+    total: text_value(c["total"], "calculation.total"),
+  }
+}
+
+///|
+fn settlement_from_json(value : Json) -> Settlement raise PricingError {
+  let s = fields(
+    value,
+    ["currency", "scale", "rounding", "minor_units", "amount", "delta"],
+    "settlement",
+  )
+  {
+    currency: text_value(s["currency"], "settlement.currency"),
+    scale: small_integer(s["scale"], 18, "settlement.scale"),
+    rounding: rounding_from_name(
+      text_value(s["rounding"], "settlement.rounding"),
+    ),
+    minor_units: text_value(s["minor_units"], "settlement.minor_units"),
+    amount: text_value(s["amount"], "settlement.amount"),
+    delta: text_value(s["delta"], "settlement.delta"),
   }
 }
 

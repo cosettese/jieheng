@@ -93,12 +93,29 @@ pub fn verify_settlement(
   scale~ : Int32,
   rounding~ : Rounding,
 ) -> Unit raise PricingError {
+  verify_total_settlement(
+    calculation.currency,
+    calculation.total,
+    settlement,
+    scale~,
+    rounding~,
+  )
+}
+
+///|
+fn verify_total_settlement(
+  currency : String,
+  exact : String,
+  settlement : Settlement,
+  scale~ : Int32,
+  rounding~ : Rounding,
+) -> Unit raise PricingError {
   if scale < 0 || scale > 18 {
     invalid(
       "scale", "settlement.scale", "choose a trusted scale between 0 and 18",
     )
   }
-  if settlement.currency != calculation.currency ||
+  if settlement.currency != currency ||
     settlement.scale != scale ||
     settlement.rounding != rounding {
     invalid(
@@ -107,7 +124,7 @@ pub fn verify_settlement(
   }
   let units = wide_natural(settlement.minor_units, 78, "settlement.minor_units")
   let step = BigInt::from_string("1" + "0".repeat(18 - scale))
-  let total = amount_atoms(calculation.total, "calculation.total")
+  let total = amount_atoms(exact, "calculation.total")
   let paid = units * step
   let delta = paid - total
   let valid = match rounding {

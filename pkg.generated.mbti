@@ -12,6 +12,8 @@ pub fn compare_plans(Plan, Plan, Usage, scale~ : Int32, rounding~ : Rounding) ->
 
 pub fn compile_plan(id~ : String, version~ : String, metric~ : String, unit~ : String, currency~ : String, tiers~ : ArrayView[Tier], mode? : PricingMode) -> Plan raise PricingError
 
+pub fn decode_charge(String) -> Charge raise PricingError
+
 pub fn decode_cohort(String) -> CohortComparison raise PricingError
 
 pub fn decode_cohort_usage(String) -> Array[Usage] raise PricingError
@@ -23,6 +25,8 @@ pub fn decode_evidence(String) -> Evidence raise PricingError
 pub fn decode_plan(String) -> Plan raise PricingError
 
 pub fn decode_usage(String) -> Usage raise PricingError
+
+pub fn encode_charge(Charge) -> String raise PricingError
 
 pub fn encode_cohort(CohortComparison) -> String raise PricingError
 
@@ -38,9 +42,13 @@ pub fn encode_usage(Usage) -> String raise PricingError
 
 pub fn rate(Plan, Usage) -> Calculation raise PricingError
 
+pub fn rate_charge(Plan, Usage, minimum~ : String, zero_usage~ : ZeroUsageMinimum, scale~ : Int32, rounding~ : Rounding) -> Charge raise PricingError
+
 pub fn settle(Calculation, scale~ : Int32, rounding~ : Rounding) -> Settlement raise PricingError
 
 pub fn verify_calculation(Plan, Usage, Calculation) -> Unit raise PricingError
+
+pub fn verify_charge(Plan, Usage, Charge, minimum~ : String, zero_usage~ : ZeroUsageMinimum, scale~ : Int32, rounding~ : Rounding) -> Unit raise PricingError
 
 pub fn verify_cohort(Plan, Plan, ArrayView[Usage], CohortComparison, scale~ : Int32, rounding~ : Rounding) -> Unit raise PricingError
 
@@ -71,6 +79,18 @@ pub(all) struct Calculation {
 pub fn Calculation::equal(Self, Self) -> Bool
 pub fn Calculation::not_equal(Self, Self) -> Bool
 pub fn Calculation::to_repr(Self) -> @debug.Repr
+
+pub(all) struct Charge {
+  calculation : Calculation
+  minimum : String
+  zero_usage : ZeroUsageMinimum
+  top_up : String
+  total : String
+  settlement : Settlement
+} derive(Eq, @debug.Debug)
+pub fn Charge::equal(Self, Self) -> Bool
+pub fn Charge::not_equal(Self, Self) -> Bool
+pub fn Charge::to_repr(Self) -> @debug.Repr
 
 pub(all) struct CohortComparison {
   rows : Array[Comparison]
@@ -167,6 +187,14 @@ pub(all) struct Usage {
 pub fn Usage::equal(Self, Self) -> Bool
 pub fn Usage::not_equal(Self, Self) -> Bool
 pub fn Usage::to_repr(Self) -> @debug.Repr
+
+pub(all) enum ZeroUsageMinimum {
+  Charge
+  Waive
+} derive(Eq, @debug.Debug)
+pub fn ZeroUsageMinimum::equal(Self, Self) -> Bool
+pub fn ZeroUsageMinimum::not_equal(Self, Self) -> Bool
+pub fn ZeroUsageMinimum::to_repr(Self) -> @debug.Repr
 
 // Type aliases
 
