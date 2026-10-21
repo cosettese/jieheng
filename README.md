@@ -14,6 +14,7 @@
 - [批量调价影响汇总](docs/cohort.md)：逐客户周期结算、拒绝重复快照、保留每项比较和可核验总计。
 - [显式最低消费](docs/minimum.md)：保留原始用量，单列补差，明确零用量政策，在补差后结算一次。
 - [多指标用量账单](docs/invoice.md)：同客户周期逐项补差、结算后汇总；拒绝重复指标和混币种，保留完整核验依据。
+- [价格生效时间表](docs/schedule.md)：明确日期选择版本，拒绝重叠和无覆盖日期，支持历史凭证核验。
 - Wasm、Wasm-GC、JavaScript、Native 使用同一个纯计算库，仅依赖标准库；文件工具使用 `moonbitlang/async`，支持 Wasm 和 Native。
 
 ## 使用
@@ -65,7 +66,7 @@ let settlement = @jieheng.settle(calculation, scale=2, rounding=HalfEven)
 
 ## 后续路线
 
-下一阶段评估套餐、有效时间与价格版本迁移。这些后续能力均未实现；当前遇到相关输入会明确拒绝。
+下一阶段评估整包计价、预算用量反求和价格版本迁移。这些后续能力均未实现；当前遇到相关输入会明确拒绝。
 
 ## 开发与验证
 

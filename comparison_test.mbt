@@ -1,5 +1,8 @@
 ///|
-fn priced(price : String, version~ : String = "v1") -> @jieheng.Plan raise {
+fn priced(
+  price : String,
+  version~ : String = "v1",
+) -> @jieheng.Plan raise @jieheng.PricingError {
   @jieheng.compile_plan(
     id="api",
     version~,

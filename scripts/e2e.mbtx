@@ -153,5 +153,18 @@ async fn main {
   if unsupported.exit_code() == 0 || unsupported.stdout() != "" || !unsupported.stderr().contains("tax") { fail("invoice unsupported nested fields must fail") }
   let invoice_recovery = @shell.Cmd("moon", invoice_args + ["--json"]).output()
   if invoice_recovery.exit_code() != 0 || invoice_recovery.stdout() != invoice.stdout() { fail("invoice recovery failed") }
+  let schedule_args = ["run", "cmd/schedule", "--target", target, "--", "examples/schedule/schedule.json", "2026-10-22", "examples/s3/usage.json", "2", "half-even"]
+  let scheduled = @shell.Cmd("moon", schedule_args + ["--json"]).output()
+  let scheduled_golden = @fs.read_file("examples/schedule/evidence.json").text()
+  if scheduled.exit_code() != 0 || scheduled.stdout().trim() != scheduled_golden.trim() { fail("scheduled evidence mismatch: \{scheduled.stderr()}") }
+  let scheduled_verified = @shell.Cmd("moon", schedule_args + ["--verify", "examples/schedule/evidence.json"]).output()
+  if scheduled_verified.exit_code() != 0 || scheduled_verified.stdout() != "verified scheduled: USD 1371.20\n" { fail("scheduled verification failed") }
+  let uncovered = @shell.Cmd("moon", ["run", "cmd/schedule", "--target", target, "--", "examples/schedule/schedule.json", "2026-09-30", "examples/s3/usage.json", "2", "half-even"]).output()
+  if uncovered.exit_code() == 0 || uncovered.stdout() != "" || !uncovered.stderr().contains("uncovered") { fail("uncovered dates must fail") }
+  @fs.write_file(tampered_path, scheduled_golden.replace(old="\"on\":\"2026-10-22\"", new="\"on\":\"2026-10-23\""))
+  let wrong_date = @shell.Cmd("moon", schedule_args + ["--verify", tampered_path]).output()
+  if wrong_date.exit_code() == 0 || wrong_date.stdout() != "" || !wrong_date.stderr().contains("scheduled.on") { fail("date substitution must fail") }
+  let scheduled_recovery = @shell.Cmd("moon", schedule_args + ["--json"]).output()
+  if scheduled_recovery.exit_code() != 0 || scheduled_recovery.stdout() != scheduled.stdout() { fail("schedule recovery failed") }
   println("file workflow verified on \{target}")
 }
