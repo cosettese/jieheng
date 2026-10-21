@@ -1,6 +1,7 @@
 import {
   "moonbitlang/async@0.22.5",
   "moonbitlang/async@0.22.5/shell",
+  "moonbitlang/async@0.22.5/fs",
   "moonbitlang/core/env",
 }
 
@@ -18,6 +19,19 @@ async fn main {
     if !output.stdout().contains("settled: \{expected} (delta 0)") {
       fail("unexpected \{fixture} result: \{output.stdout()}")
     }
+    let report = @shell.Cmd("moon", ["run", "cmd/rate", "--target", target, "--",
+      "examples/\{fixture}/plan.json", "examples/\{fixture}/usage.json", "2", "half-even", "--json"]).output()
+    if report.exit_code() != 0 { fail("JSON CLI failed: \{report.stderr()}") }
+    let golden = @fs.read_file("examples/\{fixture}/evidence.json").text()
+    if report.stdout().trim() != golden.trim() {
+      fail("\{fixture} evidence differs from the checked-in canonical record on \{target}")
+    }
+    let checked = @shell.Cmd("moon", ["run", "cmd/verify", "--target", target, "--",
+      "examples/\{fixture}/plan.json", "examples/\{fixture}/usage.json",
+      "examples/\{fixture}/evidence.json", "2", "half-even"]).output()
+    if checked.exit_code() != 0 || checked.stdout() != "verified: \{expected}\n" {
+      fail("verification failed: \{checked.stderr()} \{checked.stdout()}")
+    }
   }
   let failed = @shell.Cmd("moon", ["run", "cmd/rate", "--target", target, "--",
     "examples/stripe/plan.json", "examples/s3/usage.json", "2", "half-even"]).output()
@@ -28,5 +42,25 @@ async fn main {
     "examples/stripe/plan.json", "examples/stripe/usage.json", "2", "half-even"]).output()
   recovery.check()
   if !recovery.stdout().contains("USD 127.50") { fail("recovery failed") }
+  let dir = @fs.tmpdir(prefix="jieheng-e2e-")
+  let tampered_path = dir + "/tampered.json"
+  defer {
+    if @fs.exists(tampered_path) { @fs.remove(tampered_path) }
+    @fs.rmdir(dir)
+  }
+  let golden = @fs.read_file("examples/s3/evidence.json").text()
+  let tampered = golden.replace(old="\"total\":\"1371.2\"", new="\"total\":\"0\"")
+  if tampered == golden { fail("tamper fixture did not change") }
+  @fs.write_file(tampered_path, tampered)
+  let refused = @shell.Cmd("moon", ["run", "cmd/verify", "--target", target, "--",
+    "examples/s3/plan.json", "examples/s3/usage.json", tampered_path, "2", "half-even"]).output()
+  if refused.exit_code() == 0 || refused.stdout() != "" || !refused.stderr().contains("total") {
+    fail("tampered evidence must fail with a total diagnostic and no stdout")
+  }
+  let wrong_policy = @shell.Cmd("moon", ["run", "cmd/verify", "--target", target, "--",
+    "examples/s3/plan.json", "examples/s3/usage.json", "examples/s3/evidence.json", "2", "half-up"]).output()
+  if wrong_policy.exit_code() == 0 || !wrong_policy.stderr().contains("policy") {
+    fail("an untrusted rounding policy must fail")
+  }
   println("file workflow verified on \{target}")
 }

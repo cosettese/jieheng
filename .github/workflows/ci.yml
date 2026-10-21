@@ -18,6 +18,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: moon version --all
+      - run: moon update
       - run: moon fmt
       - run: moon info
       - run: git diff --exit-code

@@ -19,6 +19,7 @@ Exactly `schema`, `customer`, `metric`, `period`, `quantity` are required. `sche
 Run from the repository root with MoonBit v0.10.16 or a compatible stable toolchain:
 
 ```text
+moon update
 moon run cmd/rate --target wasm -- examples/stripe/plan.json examples/stripe/usage.json 2 half-even
 ```
 

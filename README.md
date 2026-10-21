@@ -8,6 +8,7 @@
 - 标准库 BigInt 精确运算，价格最多 30 位整数和 18 位小数，用量最多 30 位非负整数；不经过浮点数。
 - 分档明细与合计；显式选择 0–18 位结算精度，支持 HalfEven、HalfUp、Down、Up，保留舍入差额。
 - 严格版本化 JSON 价目表与用量交换，拒绝未知字段和重复键；文件计价工具与公开 Stripe/AWS 价格示例。
+- 可归档的计算凭证；独立检查分档守恒、小计、合计和结算规则，提供凭证核验命令。
 - Wasm、Wasm-GC、JavaScript、Native 使用同一个纯计算库，仅依赖标准库；文件工具使用 `moonbitlang/async`，支持 Wasm 和 Native。
 
 ## 使用
@@ -15,6 +16,7 @@
 模块名为 `cosettese/jieheng`。目前从源码使用；尚未发布到 Mooncakes。
 
 ```text
+moon update
 moon test --target all --deny-warn
 moon run cmd/demo --target wasm
 ```
@@ -38,7 +40,7 @@ let settlement = @jieheng.settle(calculation, scale=2, rounding=HalfEven)
 // settlement.delta == "-0.001"
 ```
 
-公开接口见 [pkg.generated.mbti](pkg.generated.mbti)。调用方需传播或处理 `PricingError`；诊断提供 `code`、`path`、`message`。`Plan` 是已校验且脱离输入数组的快照。`Calculation` 是可检查的公开记录；`settle` 只校验金额和精度，不负责认证外部提供的计算明细。
+公开接口见 [pkg.generated.mbti](pkg.generated.mbti)。调用方需传播或处理 `PricingError`；诊断提供 `code`、`path`、`message`。`Plan` 是已校验且脱离输入数组的快照。`Calculation` 是可检查的公开记录；`settle` 只校验金额和精度。接受外部明细时，使用 `verify_evidence` 对可信计划、用量和结算规则进行独立核验。
 
 ## 精确定义与边界
 
@@ -56,13 +58,14 @@ let settlement = @jieheng.settle(calculation, scale=2, rounding=HalfEven)
 
 ## 后续路线
 
-下一步提供计算凭证和独立核验。之后才考虑独立的 volume 定价模式与价格变更比较。这里列出的后续能力均未实现。
+下一阶段考虑独立的 volume 定价模式及同一用量下的价格变更比较，再评估套餐/最低消费和多指标组合，最后考虑有效时间与价格版本迁移。这些后续能力均未实现；当前遇到相关输入会明确拒绝。
 
 ## 开发与验证
 
 使用 `moon.mod` / `moon.pkg`。当前验证工具链：稳定版 MoonBit v0.10.16+b1a0e846e，moon 0.1.20261020。CI 在 Linux、Windows、macOS 执行四种后端测试和示例。CI 配置代表预期覆盖，具体运行结果以 Actions 为准。
 
 ```text
+moon update
 moon fmt
 moon info
 moon check --target all --deny-warn
@@ -74,3 +77,5 @@ moon test --target all --deny-warn
 Apache-2.0；依赖和示例来源见 [SOURCES.md](SOURCES.md)。
 
 完整文件工作流、JSON 格式与预期输出见 [docs/formats.md](docs/formats.md)。真实 S3 价格快照的区域、SKU、发布时间、单位和估价限制见 [examples/s3/README.md](examples/s3/README.md)。运行 `moon run scripts/e2e.mbtx wasm` 可核对两个公开案例、错误退出和失败后恢复。
+
+计算凭证的生成、核验、篡改示例与独立核验算法见 [docs/verification.md](docs/verification.md)。凭证没有密码学签名，核验方必须保留可信的计划、用量和结算规则。

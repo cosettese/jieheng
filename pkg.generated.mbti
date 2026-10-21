@@ -8,9 +8,13 @@ import {
 // Values
 pub fn compile_plan(id~ : String, version~ : String, metric~ : String, unit~ : String, currency~ : String, tiers~ : ArrayView[Tier]) -> Plan raise PricingError
 
+pub fn decode_evidence(String) -> Evidence raise PricingError
+
 pub fn decode_plan(String) -> Plan raise PricingError
 
 pub fn decode_usage(String) -> Usage raise PricingError
+
+pub fn encode_evidence(Evidence) -> String
 
 pub fn encode_plan(Plan) -> String
 
@@ -19,6 +23,12 @@ pub fn encode_usage(Usage) -> String raise PricingError
 pub fn rate(Plan, Usage) -> Calculation raise PricingError
 
 pub fn settle(Calculation, scale~ : Int32, rounding~ : Rounding) -> Settlement raise PricingError
+
+pub fn verify_calculation(Plan, Usage, Calculation) -> Unit raise PricingError
+
+pub fn verify_evidence(Plan, Usage, Evidence, scale~ : Int32, rounding~ : Rounding) -> Unit raise PricingError
+
+pub fn verify_settlement(Calculation, Settlement, scale~ : Int32, rounding~ : Rounding) -> Unit raise PricingError
 
 // Errors
 pub(all) suberror PricingError {
@@ -41,6 +51,14 @@ pub(all) struct Calculation {
 pub fn Calculation::equal(Self, Self) -> Bool
 pub fn Calculation::not_equal(Self, Self) -> Bool
 pub fn Calculation::to_repr(Self) -> @debug.Repr
+
+pub(all) struct Evidence {
+  calculation : Calculation
+  settlement : Settlement
+} derive(Eq, @debug.Debug)
+pub fn Evidence::equal(Self, Self) -> Bool
+pub fn Evidence::not_equal(Self, Self) -> Bool
+pub fn Evidence::to_repr(Self) -> @debug.Repr
 
 pub(all) struct Line {
   tier : Int32
