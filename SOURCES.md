@@ -17,6 +17,8 @@ The customer and period labels in tests and the demo are synthetic. The publishe
 
 ## Ecosystem boundary
 
+Package pricing (2026-10-22): demand/semantics reference is [Stripe's Plan API, transform_usage](https://docs.stripe.com/api/plans/object). Jieheng implements a fixed-capacity upward package count with independently checked minimality, not Stripe's subscription or usage protocols. The SMS fixture (1000 units at USD 0.85, quantity 2501) is entirely synthetic and not a supplier price. Implementation and repeated-addition reference tests were written here; no upstream code or tests were copied.
+
 The effective-date schedule example (2026-10-22) uses the existing S3 snapshot and its observed `effectiveDate` of 2026-10-01. No additional historical prices are invented. Open-ended applicability and the selected date are explicit demonstration inputs, not a claim about future AWS prices. Gregorian validation and timeline tests were written for this project without copying a date-library implementation.
 
 The multi-metric invoice example (2026-10-22) combines the existing Stripe teaching prices and S3 public price snapshot with synthetic usage, customer/period and a hypothetical storage floor. It is a constructed pricing statement, not an actual provider invoice. Multi-charge demand is also illustrated by [Lago's invoicing product](https://getlago.com/platform/billing-invoicing). No invoice implementation, test suite or documentation prose was copied. Jieheng remains a pure usage-pricing library without accounting entries, tax or payment processing.

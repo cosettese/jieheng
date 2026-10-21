@@ -15,18 +15,7 @@ pub fn compile_plan(
   label(version, "plan.version")
   label(metric, "plan.metric")
   label(unit, "plan.unit")
-  if currency.length() != 3 {
-    invalid(
-      "currency", "plan.currency", "use an explicit three-letter uppercase currency label",
-    )
-  }
-  for c in currency {
-    if c < 'A' || c > 'Z' {
-      invalid(
-        "currency", "plan.currency", "use ASCII uppercase letters; no currency conversion is performed",
-      )
-    }
-  }
+  check_currency(currency)
   if tiers.length() == 0 || tiers.length() > 1024 {
     invalid(
       "tiers", "plan.tiers", "provide 1..1024 tiers, ending with an unbounded tier",
@@ -73,6 +62,22 @@ pub fn compile_plan(
     })
   }
   { id, version, metric, unit, currency, mode, tiers: compiled, }
+}
+
+///|
+fn check_currency(currency : String) -> Unit raise PricingError {
+  if currency.length() != 3 {
+    invalid(
+      "currency", "plan.currency", "use an explicit three-letter uppercase currency label",
+    )
+  }
+  for c in currency {
+    if c < 'A' || c > 'Z' {
+      invalid(
+        "currency", "plan.currency", "use ASCII uppercase letters; no currency conversion is performed",
+      )
+    }
+  }
 }
 
 ///|

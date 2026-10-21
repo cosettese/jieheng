@@ -166,5 +166,18 @@ async fn main {
   if wrong_date.exit_code() == 0 || wrong_date.stdout() != "" || !wrong_date.stderr().contains("scheduled.on") { fail("date substitution must fail") }
   let scheduled_recovery = @shell.Cmd("moon", schedule_args + ["--json"]).output()
   if scheduled_recovery.exit_code() != 0 || scheduled_recovery.stdout() != scheduled.stdout() { fail("schedule recovery failed") }
+  let package_args = ["run", "cmd/packages", "--target", target, "--", "examples/packages/plan.json", "examples/packages/usage.json", "2", "half-even"]
+  let packages = @shell.Cmd("moon", package_args + ["--json"]).output()
+  let packages_golden = @fs.read_file("examples/packages/evidence.json").text()
+  if packages.exit_code() != 0 || packages.stdout().trim() != packages_golden.trim() { fail("package evidence mismatch: \{packages.stderr()}") }
+  let packages_verified = @shell.Cmd("moon", package_args + ["--verify", "examples/packages/evidence.json"]).output()
+  if packages_verified.exit_code() != 0 || packages_verified.stdout() != "verified packages: USD 2.55\n" { fail("package verification failed") }
+  let changed_capacity = packages_golden.replace(old="\"unused_units\":\"499\"", new="\"unused_units\":\"500\"")
+  if changed_capacity == packages_golden { fail("package capacity fixture did not change") }
+  @fs.write_file(tampered_path, changed_capacity)
+  let packages_bad = @shell.Cmd("moon", package_args + ["--verify", tampered_path]).output()
+  if packages_bad.exit_code() == 0 || packages_bad.stdout() != "" || !packages_bad.stderr().contains("capacity") { fail("package capacity forgery must fail") }
+  let packages_recovery = @shell.Cmd("moon", package_args + ["--json"]).output()
+  if packages_recovery.exit_code() != 0 || packages_recovery.stdout() != packages.stdout() { fail("package recovery failed") }
   println("file workflow verified on \{target}")
 }

@@ -10,6 +10,8 @@ pub fn compare_cohort(Plan, Plan, ArrayView[Usage], scale~ : Int32, rounding~ : 
 
 pub fn compare_plans(Plan, Plan, Usage, scale~ : Int32, rounding~ : Rounding) -> Comparison raise PricingError
 
+pub fn compile_package(id~ : String, version~ : String, metric~ : String, unit~ : String, currency~ : String, package_size~ : String, package_price~ : String) -> PackagePlan raise PricingError
+
 pub fn compile_plan(id~ : String, version~ : String, metric~ : String, unit~ : String, currency~ : String, tiers~ : ArrayView[Tier], mode? : PricingMode) -> Plan raise PricingError
 
 pub fn compile_schedule(ArrayView[EffectivePlan]) -> Schedule raise PricingError
@@ -27,6 +29,10 @@ pub fn decode_evidence(String) -> Evidence raise PricingError
 pub fn decode_invoice(String) -> Invoice raise PricingError
 
 pub fn decode_invoice_input(String) -> Array[ChargeInput] raise PricingError
+
+pub fn decode_package_plan(String) -> PackagePlan raise PricingError
+
+pub fn decode_packages(String) -> PackageEvidence raise PricingError
 
 pub fn decode_plan(String) -> Plan raise PricingError
 
@@ -50,6 +56,10 @@ pub fn encode_invoice(Invoice) -> String raise PricingError
 
 pub fn encode_invoice_input(ArrayView[ChargeInput]) -> String raise PricingError
 
+pub fn encode_package_plan(PackagePlan) -> String
+
+pub fn encode_packages(PackageEvidence) -> String raise PricingError
+
 pub fn encode_plan(Plan) -> String
 
 pub fn encode_schedule(Schedule) -> String raise PricingError
@@ -63,6 +73,8 @@ pub fn rate(Plan, Usage) -> Calculation raise PricingError
 pub fn rate_charge(Plan, Usage, minimum~ : String, zero_usage~ : ZeroUsageMinimum, scale~ : Int32, rounding~ : Rounding) -> Charge raise PricingError
 
 pub fn rate_invoice(ArrayView[ChargeInput], scale~ : Int32, rounding~ : Rounding) -> Invoice raise PricingError
+
+pub fn rate_packages(PackagePlan, Usage, scale~ : Int32, rounding~ : Rounding) -> PackageEvidence raise PricingError
 
 pub fn rate_scheduled(Schedule, String, Usage, scale~ : Int32, rounding~ : Rounding) -> ScheduledEvidence raise PricingError
 
@@ -81,6 +93,8 @@ pub fn verify_comparison(Plan, Plan, Usage, Comparison, scale~ : Int32, rounding
 pub fn verify_evidence(Plan, Usage, Evidence, scale~ : Int32, rounding~ : Rounding) -> Unit raise PricingError
 
 pub fn verify_invoice(ArrayView[ChargeInput], Invoice, scale~ : Int32, rounding~ : Rounding) -> Unit raise PricingError
+
+pub fn verify_packages(PackagePlan, Usage, PackageEvidence, scale~ : Int32, rounding~ : Rounding) -> Unit raise PricingError
 
 pub fn verify_scheduled(Schedule, String, Usage, ScheduledEvidence, scale~ : Int32, rounding~ : Rounding) -> Unit raise PricingError
 
@@ -193,6 +207,27 @@ pub(all) struct Line {
 pub fn Line::equal(Self, Self) -> Bool
 pub fn Line::not_equal(Self, Self) -> Bool
 pub fn Line::to_repr(Self) -> @debug.Repr
+
+pub(all) struct PackageEvidence {
+  plan_id : String
+  plan_version : String
+  currency : String
+  unit : String
+  usage : Usage
+  package_size : String
+  package_price : String
+  packages : String
+  unused_units : String
+  total : String
+  settlement : Settlement
+} derive(Eq, @debug.Debug)
+pub fn PackageEvidence::equal(Self, Self) -> Bool
+pub fn PackageEvidence::not_equal(Self, Self) -> Bool
+pub fn PackageEvidence::to_repr(Self) -> @debug.Repr
+
+pub struct PackagePlan {
+  // private fields
+}
 
 pub struct Plan {
   // private fields
