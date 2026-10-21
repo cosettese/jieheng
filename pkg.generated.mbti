@@ -1,0 +1,95 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "cosettese/jieheng"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn compile_plan(id~ : String, version~ : String, metric~ : String, unit~ : String, currency~ : String, tiers~ : ArrayView[Tier]) -> Plan raise PricingError
+
+pub fn rate(Plan, Usage) -> Calculation raise PricingError
+
+pub fn settle(Calculation, scale~ : Int, rounding~ : Rounding) -> Settlement raise PricingError
+
+// Errors
+pub(all) suberror PricingError {
+  Invalid(code~ : String, path~ : String, message~ : String)
+} derive(Eq, @debug.Debug)
+pub fn PricingError::equal(Self, Self) -> Bool
+pub fn PricingError::not_equal(Self, Self) -> Bool
+pub fn PricingError::to_repr(Self) -> @debug.Repr
+
+// Types and methods
+pub(all) struct Calculation {
+  plan_id : String
+  plan_version : String
+  currency : String
+  unit : String
+  usage : Usage
+  lines : Array[Line]
+  total : String
+} derive(Eq, @debug.Debug)
+pub fn Calculation::equal(Self, Self) -> Bool
+pub fn Calculation::not_equal(Self, Self) -> Bool
+pub fn Calculation::to_repr(Self) -> @debug.Repr
+
+pub(all) struct Line {
+  tier : Int
+  from_exclusive : String
+  to_inclusive : String
+  quantity : String
+  unit_price : String
+  subtotal : String
+} derive(Eq, @debug.Debug)
+pub fn Line::equal(Self, Self) -> Bool
+pub fn Line::not_equal(Self, Self) -> Bool
+pub fn Line::to_repr(Self) -> @debug.Repr
+
+pub struct Plan {
+  // private fields
+}
+
+pub(all) enum Rounding {
+  HalfEven
+  HalfUp
+  Down
+  Up
+} derive(Eq, @debug.Debug)
+pub fn Rounding::equal(Self, Self) -> Bool
+pub fn Rounding::not_equal(Self, Self) -> Bool
+pub fn Rounding::to_repr(Self) -> @debug.Repr
+
+pub(all) struct Settlement {
+  currency : String
+  scale : Int
+  rounding : Rounding
+  minor_units : String
+  amount : String
+  delta : String
+} derive(Eq, @debug.Debug)
+pub fn Settlement::equal(Self, Self) -> Bool
+pub fn Settlement::not_equal(Self, Self) -> Bool
+pub fn Settlement::to_repr(Self) -> @debug.Repr
+
+pub(all) struct Tier {
+  up_to : String?
+  unit_price : String
+} derive(Eq, @debug.Debug)
+pub fn Tier::equal(Self, Self) -> Bool
+pub fn Tier::not_equal(Self, Self) -> Bool
+pub fn Tier::to_repr(Self) -> @debug.Repr
+
+pub(all) struct Usage {
+  customer : String
+  metric : String
+  period : String
+  quantity : String
+} derive(Eq, @debug.Debug)
+pub fn Usage::equal(Self, Self) -> Bool
+pub fn Usage::not_equal(Self, Self) -> Bool
+pub fn Usage::to_repr(Self) -> @debug.Repr
+
+// Type aliases
+
+// Traits
