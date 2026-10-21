@@ -10,6 +10,7 @@
 - 分档明细与合计；显式选择 0–18 位结算精度，支持 HalfEven、HalfUp、Down、Up，保留舍入差额。
 - 严格版本化 JSON 价目表与用量交换，拒绝未知字段和重复键；文件计价工具与公开 Stripe/AWS 价格示例。
 - 可归档的计算凭证；独立检查分档守恒、小计、合计和结算规则，提供凭证核验命令。
+- 同一用量下比较两个价格方案，保留双方凭证，分别输出精确差额和结算差额，并可核验归档比较报告。
 - Wasm、Wasm-GC、JavaScript、Native 使用同一个纯计算库，仅依赖标准库；文件工具使用 `moonbitlang/async`，支持 Wasm 和 Native。
 
 ## 使用
@@ -61,7 +62,7 @@ let settlement = @jieheng.settle(calculation, scale=2, rounding=HalfEven)
 
 ## 后续路线
 
-下一阶段考虑同一用量下的价格变更比较，再评估套餐/最低消费和多指标组合，最后考虑有效时间与价格版本迁移。这些后续能力均未实现；当前遇到相关输入会明确拒绝。
+下一阶段评估套餐/最低消费和多指标组合，再考虑有效时间与价格版本迁移，以及多用量快照的调价影响汇总。这些后续能力均未实现；当前遇到相关输入会明确拒绝。
 
 ## 开发与验证
 
@@ -82,3 +83,5 @@ Apache-2.0；依赖和示例来源见 [SOURCES.md](SOURCES.md)。
 完整文件工作流、JSON 格式与预期输出见 [docs/formats.md](docs/formats.md)。真实 S3 价格快照的区域、SKU、发布时间、单位和估价限制见 [examples/s3/README.md](examples/s3/README.md)。运行 `moon run scripts/e2e.mbtx wasm` 可核对公开案例、错误退出和失败后恢复。
 
 计算凭证的生成、核验、篡改示例与独立核验算法见 [docs/verification.md](docs/verification.md)。凭证没有密码学签名，核验方必须保留可信的计划、用量和结算规则。
+
+新旧方案或两种计价模式的比较、差额定义及归档核验见 [docs/comparison.md](docs/comparison.md)。比较不进行币种或计量单位转换。

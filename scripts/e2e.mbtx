@@ -62,5 +62,41 @@ async fn main {
   if wrong_policy.exit_code() == 0 || !wrong_policy.stderr().contains("policy") {
     fail("an untrusted rounding policy must fail")
   }
+  let compared = @shell.Cmd("moon", ["run", "cmd/compare", "--target", target, "--",
+    "examples/stripe/plan.json", "examples/stripe-volume/plan.json", "examples/stripe/usage.json", "2", "half-even"]).output()
+  if compared.exit_code() != 0 || !compared.stdout().contains("exact delta: -7.5\nsettled delta: -7.5\n") {
+    fail("comparison workflow failed: \{compared.stderr()} \{compared.stdout()}")
+  }
+  let compared_json = @shell.Cmd("moon", ["run", "cmd/compare", "--target", target, "--",
+    "examples/stripe/plan.json", "examples/stripe-volume/plan.json", "examples/stripe/usage.json", "2", "half-even", "--json"]).output()
+  let expected_comparison = @fs.read_file("examples/stripe-volume/comparison.json").text()
+  if compared_json.exit_code() != 0 || compared_json.stdout().trim() != expected_comparison.trim() {
+    fail("canonical comparison differs on \{target}: \{compared_json.stderr()}")
+  }
+  let verified_comparison = @shell.Cmd("moon", ["run", "cmd/compare", "--target", target, "--",
+    "examples/stripe/plan.json", "examples/stripe-volume/plan.json", "examples/stripe/usage.json", "2", "half-even",
+    "--verify", "examples/stripe-volume/comparison.json"]).output()
+  if verified_comparison.exit_code() != 0 || verified_comparison.stdout() != "verified comparison: exact delta -7.5; settled delta -7.5\n" {
+    fail("comparison verification failed: \{verified_comparison.stderr()}")
+  }
+  let forged_comparison = expected_comparison.replace(old="\"settled_delta\":\"-7.5\"", new="\"settled_delta\":\"0\"")
+  if forged_comparison == expected_comparison { fail("comparison tamper did not change the fixture") }
+  @fs.write_file(tampered_path, forged_comparison)
+  let refused_comparison = @shell.Cmd("moon", ["run", "cmd/compare", "--target", target, "--",
+    "examples/stripe/plan.json", "examples/stripe-volume/plan.json", "examples/stripe/usage.json", "2", "half-even",
+    "--verify", tampered_path]).output()
+  if refused_comparison.exit_code() == 0 || refused_comparison.stdout() != "" || !refused_comparison.stderr().contains("comparison.settled_delta") {
+    fail("tampered comparison must be refused without stdout")
+  }
+  let incompatible = @shell.Cmd("moon", ["run", "cmd/compare", "--target", target, "--",
+    "examples/stripe/plan.json", "examples/s3/plan.json", "examples/stripe/usage.json", "2", "half-even"]).output()
+  if incompatible.exit_code() == 0 || incompatible.stdout() != "" || !incompatible.stderr().contains("comparison") {
+    fail("incompatible comparison units must be refused")
+  }
+  let comparison_recovery = @shell.Cmd("moon", ["run", "cmd/compare", "--target", target, "--",
+    "examples/stripe/plan.json", "examples/stripe-volume/plan.json", "examples/stripe/usage.json", "2", "half-even"]).output()
+  if comparison_recovery.exit_code() != 0 || comparison_recovery.stdout() != compared.stdout() {
+    fail("comparison must recover after invalid input")
+  }
   println("file workflow verified on \{target}")
 }

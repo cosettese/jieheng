@@ -6,13 +6,19 @@ import {
 }
 
 // Values
+pub fn compare_plans(Plan, Plan, Usage, scale~ : Int32, rounding~ : Rounding) -> Comparison raise PricingError
+
 pub fn compile_plan(id~ : String, version~ : String, metric~ : String, unit~ : String, currency~ : String, tiers~ : ArrayView[Tier], mode? : PricingMode) -> Plan raise PricingError
+
+pub fn decode_comparison(String) -> Comparison raise PricingError
 
 pub fn decode_evidence(String) -> Evidence raise PricingError
 
 pub fn decode_plan(String) -> Plan raise PricingError
 
 pub fn decode_usage(String) -> Usage raise PricingError
+
+pub fn encode_comparison(Comparison) -> String
 
 pub fn encode_evidence(Evidence) -> String
 
@@ -25,6 +31,8 @@ pub fn rate(Plan, Usage) -> Calculation raise PricingError
 pub fn settle(Calculation, scale~ : Int32, rounding~ : Rounding) -> Settlement raise PricingError
 
 pub fn verify_calculation(Plan, Usage, Calculation) -> Unit raise PricingError
+
+pub fn verify_comparison(Plan, Plan, Usage, Comparison, scale~ : Int32, rounding~ : Rounding) -> Unit raise PricingError
 
 pub fn verify_evidence(Plan, Usage, Evidence, scale~ : Int32, rounding~ : Rounding) -> Unit raise PricingError
 
@@ -51,6 +59,16 @@ pub(all) struct Calculation {
 pub fn Calculation::equal(Self, Self) -> Bool
 pub fn Calculation::not_equal(Self, Self) -> Bool
 pub fn Calculation::to_repr(Self) -> @debug.Repr
+
+pub(all) struct Comparison {
+  baseline : Evidence
+  candidate : Evidence
+  exact_delta : String
+  settled_delta : String
+} derive(Eq, @debug.Debug)
+pub fn Comparison::equal(Self, Self) -> Bool
+pub fn Comparison::not_equal(Self, Self) -> Bool
+pub fn Comparison::to_repr(Self) -> @debug.Repr
 
 pub(all) struct Evidence {
   calculation : Calculation

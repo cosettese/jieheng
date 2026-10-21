@@ -59,6 +59,11 @@ fn rounding_from_name(text : String) -> Rounding raise PricingError {
 /// Encode every typed field in deterministic schema order.
 /// Does not validate authenticity: use verify_evidence before accepting a record.
 pub fn encode_evidence(evidence : Evidence) -> String {
+  evidence_json(evidence).stringify()
+}
+
+///|
+fn evidence_json(evidence : Evidence) -> Json {
   let c = evidence.calculation
   let s = evidence.settlement
   let lines : Array[Json] = []
@@ -92,17 +97,18 @@ pub fn encode_evidence(evidence : Evidence) -> String {
       "delta": s.delta,
     },
   }
-  value.stringify()
+  value
 }
 
 ///|
 /// Strict structural decoder; semantic acceptance requires verify_evidence.
 pub fn decode_evidence(text : String) -> Evidence raise PricingError {
-  let root = fields(
-    parse_document(text),
-    ["schema", "calculation", "settlement"],
-    "evidence",
-  )
+  evidence_from_json(parse_document(text))
+}
+
+///|
+fn evidence_from_json(value : Json) -> Evidence raise PricingError {
+  let root = fields(value, ["schema", "calculation", "settlement"], "evidence")
   expect_value(root, "schema", "jieheng.evidence.v1", "evidence")
   let c = fields(
     root["calculation"],
