@@ -194,5 +194,16 @@ async fn main {
   if substituted_budget.exit_code() == 0 || substituted_budget.stdout() != "" || !substituted_budget.stderr().contains("budget.request") { fail("untrusted budget substitution must fail") }
   let budget_recovery = @shell.Cmd("moon", budget_args + ["--json"]).output()
   if budget_recovery.exit_code() != 0 || budget_recovery.stdout() != budget.stdout() { fail("budget recovery failed") }
+  let bill_args = ["run", "cmd/bill", "--target", target, "--", "examples/bill/input.json", "2", "half-even"]
+  let bill = @shell.Cmd("moon", bill_args + ["--json"]).output()
+  let bill_golden = @fs.read_file("examples/bill/bill.json").text()
+  if bill.exit_code() != 0 || bill.stdout().trim() != bill_golden.trim() { fail("mixed bill mismatch: \{bill.stderr()}") }
+  let bill_verified = @shell.Cmd("moon", bill_args + ["--verify", "examples/bill/bill.json"]).output()
+  if bill_verified.exit_code() != 0 || bill_verified.stdout() != "verified bill: USD 1502.55\n" { fail("mixed bill verification failed") }
+  @fs.write_file(tampered_path, bill_golden.replace(old="\"unused_units\":\"499\"", new="\"unused_units\":\"500\""))
+  let bill_bad = @shell.Cmd("moon", bill_args + ["--verify", tampered_path]).output()
+  if bill_bad.exit_code() == 0 || bill_bad.stdout() != "" || !bill_bad.stderr().contains("capacity") { fail("mixed package tampering must fail") }
+  let bill_recovery = @shell.Cmd("moon", bill_args + ["--json"]).output()
+  if bill_recovery.exit_code() != 0 || bill_recovery.stdout() != bill.stdout() { fail("mixed bill recovery failed") }
   println("file workflow verified on \{target}")
 }

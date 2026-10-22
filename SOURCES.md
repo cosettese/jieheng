@@ -17,6 +17,8 @@ The customer and period labels in tests and the demo are synthetic. The publishe
 
 ## Ecosystem boundary
 
+The mixed bill example combines the already documented S3 price snapshot and synthetic message package, usage and minimum-spend parameters. No new supplier price is asserted. Tagged-model composition, duplicate-metric checks and regression tests were written for this project without copying upstream code or fixtures.
+
 Budget inversion (2026-10-22) reuses the existing S3 price facts with a synthetic USD 1500 budget and 100000-unit search ceiling. No optimizer implementation or tests were copied. Exhaustive forward enumeration is the test oracle; maximality verification uses separately derived rounding thresholds. Stripe's existing public volume-pricing example also documents that crossing tiers can decrease totals, motivating the per-tier search rather than a globally monotone assumption.
 
 Package pricing (2026-10-22): demand/semantics reference is [Stripe's Plan API, transform_usage](https://docs.stripe.com/api/plans/object). Jieheng implements a fixed-capacity upward package count with independently checked minimality, not Stripe's subscription or usage protocols. The SMS fixture (1000 units at USD 0.85, quantity 2501) is entirely synthetic and not a supplier price. Implementation and repeated-addition reference tests were written here; no upstream code or tests were copied.

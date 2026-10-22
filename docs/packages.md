@@ -22,4 +22,4 @@ moon run cmd/packages --target wasm -- examples/packages/plan.json examples/pack
 
 `encode/decode_package_plan` 使用 `jieheng.package-plan.v1`，仅含 `schema,id,version,metric,unit,currency,package_size,package_price`。`encode/decode_packages` 使用 `jieheng.package-evidence.v1`，仅含 `schema,plan_id,plan_version,currency,unit,usage,package_size,package_price,packages,unused_units,total,settlement`。数字均用字符串，Usage/Settlement 与既有格式相同。拒绝未知字段、重复键、不兼容 schema 和超过 1 Mi UTF-16 单元的输入；凭证编码也检查大小。解码凭证后必须以可信计划、用量和政策核验。
 
-包计划与旧 PlanV1 分离，旧解码器会拒绝包格式。当前不将包计划放入 `Invoice` 或 `Schedule`，不支持包内阶梯、免费包数、向下取整、最低购买包数、未用容量结转、最低消费或折扣；这些字段不能被静默忽略。不同用量快照不得擅自分开购买包，否则可能重复向上取整。
+包计划与旧 PlanV1 分离，旧解码器会拒绝包格式。可以通过独立的 [Bill 接口](bill.md) 与阶梯项组成账单；旧 `Invoice` / `Schedule` 不接受包计划。不支持包内阶梯、免费包数、向下取整、最低购买包数、未用容量结转、最低消费或折扣；这些字段不能被静默忽略。不同用量快照不得擅自分开购买包，否则可能重复向上取整。

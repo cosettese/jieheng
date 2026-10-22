@@ -16,6 +16,10 @@ pub fn compile_plan(id~ : String, version~ : String, metric~ : String, unit~ : S
 
 pub fn compile_schedule(ArrayView[EffectivePlan]) -> Schedule raise PricingError
 
+pub fn decode_bill(String) -> Bill raise PricingError
+
+pub fn decode_bill_input(String) -> Array[BillItem] raise PricingError
+
 pub fn decode_budget(String) -> BudgetQuote raise PricingError
 
 pub fn decode_budget_request(String) -> BudgetRequest raise PricingError
@@ -45,6 +49,10 @@ pub fn decode_schedule(String) -> Schedule raise PricingError
 pub fn decode_scheduled(String) -> ScheduledEvidence raise PricingError
 
 pub fn decode_usage(String) -> Usage raise PricingError
+
+pub fn encode_bill(Bill) -> String raise PricingError
+
+pub fn encode_bill_input(ArrayView[BillItem]) -> String raise PricingError
 
 pub fn encode_budget(BudgetQuote) -> String raise PricingError
 
@@ -80,6 +88,8 @@ pub fn quote_budget(Plan, BudgetRequest, scale~ : Int32, rounding~ : Rounding) -
 
 pub fn rate(Plan, Usage) -> Calculation raise PricingError
 
+pub fn rate_bill(ArrayView[BillItem], scale~ : Int32, rounding~ : Rounding) -> Bill raise PricingError
+
 pub fn rate_charge(Plan, Usage, minimum~ : String, zero_usage~ : ZeroUsageMinimum, scale~ : Int32, rounding~ : Rounding) -> Charge raise PricingError
 
 pub fn rate_invoice(ArrayView[ChargeInput], scale~ : Int32, rounding~ : Rounding) -> Invoice raise PricingError
@@ -91,6 +101,8 @@ pub fn rate_scheduled(Schedule, String, Usage, scale~ : Int32, rounding~ : Round
 pub fn select_plan(Schedule, String) -> Plan raise PricingError
 
 pub fn settle(Calculation, scale~ : Int32, rounding~ : Rounding) -> Settlement raise PricingError
+
+pub fn verify_bill(ArrayView[BillItem], Bill, scale~ : Int32, rounding~ : Rounding) -> Unit raise PricingError
 
 pub fn verify_budget(Plan, BudgetRequest, BudgetQuote, scale~ : Int32, rounding~ : Rounding) -> Unit raise PricingError
 
@@ -121,6 +133,44 @@ pub fn PricingError::not_equal(Self, Self) -> Bool
 pub fn PricingError::to_repr(Self) -> @debug.Repr
 
 // Types and methods
+pub(all) struct Bill {
+  customer : String
+  period : String
+  currency : String
+  items : Array[BillEvidence]
+  totals : BillTotals
+} derive(Eq, @debug.Debug)
+pub fn Bill::equal(Self, Self) -> Bool
+pub fn Bill::not_equal(Self, Self) -> Bool
+pub fn Bill::to_repr(Self) -> @debug.Repr
+
+pub(all) enum BillEvidence {
+  MeteredCharge(Charge)
+  PackageCharge(PackageEvidence)
+} derive(Eq, @debug.Debug)
+pub fn BillEvidence::equal(Self, Self) -> Bool
+pub fn BillEvidence::not_equal(Self, Self) -> Bool
+pub fn BillEvidence::to_repr(Self) -> @debug.Repr
+
+pub(all) enum BillItem {
+  Metered(ChargeInput)
+  Packaged(PackagePlan, Usage)
+}
+
+pub(all) struct BillTotals {
+  usage_total : String
+  top_up : String
+  total : String
+  scale : Int32
+  rounding : Rounding
+  minor_units : String
+  amount : String
+  delta : String
+} derive(Eq, @debug.Debug)
+pub fn BillTotals::equal(Self, Self) -> Bool
+pub fn BillTotals::not_equal(Self, Self) -> Bool
+pub fn BillTotals::to_repr(Self) -> @debug.Repr
+
 pub(all) struct BudgetQuote {
   request : BudgetRequest
   evidence : Evidence

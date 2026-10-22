@@ -1,5 +1,10 @@
 ///|
 pub fn encode_package_plan(plan : PackagePlan) -> String {
+  package_plan_json(plan).stringify()
+}
+
+///|
+fn package_plan_json(plan : PackagePlan) -> Json {
   let json : Json = {
     "schema": "jieheng.package-plan.v1",
     "id": plan.id,
@@ -10,13 +15,18 @@ pub fn encode_package_plan(plan : PackagePlan) -> String {
     "package_size": plan.size.to_string(),
     "package_price": format_atoms(plan.price),
   }
-  json.stringify()
+  json
 }
 
 ///|
 pub fn decode_package_plan(text : String) -> PackagePlan raise PricingError {
+  package_plan_from_json(parse_document(text))
+}
+
+///|
+fn package_plan_from_json(value : Json) -> PackagePlan raise PricingError {
   let r = fields(
-    parse_document(text),
+    value,
     [
       "schema", "id", "version", "metric", "unit", "currency", "package_size", "package_price",
     ],
@@ -36,6 +46,11 @@ pub fn decode_package_plan(text : String) -> PackagePlan raise PricingError {
 
 ///|
 pub fn encode_packages(record : PackageEvidence) -> String raise PricingError {
+  bounded_json(packages_json(record))
+}
+
+///|
+fn packages_json(record : PackageEvidence) -> Json {
   let json : Json = {
     "schema": "jieheng.package-evidence.v1",
     "plan_id": record.plan_id,
@@ -50,14 +65,19 @@ pub fn encode_packages(record : PackageEvidence) -> String raise PricingError {
     "total": record.total,
     "settlement": settlement_json(record.settlement),
   }
-  bounded_json(json)
+  json
 }
 
 ///|
 /// Strict structural decoder; accept only after verify_packages with trusted inputs.
 pub fn decode_packages(text : String) -> PackageEvidence raise PricingError {
+  packages_from_json(parse_document(text))
+}
+
+///|
+fn packages_from_json(value : Json) -> PackageEvidence raise PricingError {
   let r = fields(
-    parse_document(text),
+    value,
     [
       "schema", "plan_id", "plan_version", "currency", "unit", "usage", "package_size",
       "package_price", "packages", "unused_units", "total", "settlement",
