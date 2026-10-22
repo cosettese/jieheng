@@ -1,0 +1,1 @@
+{"schema":"jieheng.usage-bundle.v1","usages":[{"schema":"jieheng.usage.v1","customer":"notification-service","metric":"messages","period":"2026-10","quantity":"2501"},{"schema":"jieheng.usage.v1","customer":"notification-service","metric":"storage-gb-month","period":"2026-10","quantity":"60000"}]}

@@ -235,5 +235,18 @@ async fn main {
     let quota_recovery = @shell.Cmd("moon", quota_args + ["--json"]).output()
     if quota_recovery.exit_code() != 0 || quota_recovery.stdout() != quota.stdout() { fail("quota recovery failed") }
   }
+  let catalog_args = ["run", "cmd/catalog", "--target", target, "--", "examples/catalog/catalog.json", "2026-10-22", "examples/catalog/usages.json", "2", "half-even"]
+  let catalog = @shell.Cmd("moon", catalog_args + ["--json"]).output()
+  let catalog_golden = @fs.read_file("examples/catalog/bill.json").text()
+  if catalog.exit_code() != 0 || catalog.stdout().trim() != catalog_golden.trim() { fail("catalog golden mismatch: \{catalog.stderr()}") }
+  let catalog_checked = @shell.Cmd("moon", catalog_args + ["--verify", "examples/catalog/bill.json"]).output()
+  if catalog_checked.exit_code() != 0 || catalog_checked.stdout() != "verified catalog bill: USD 1502.55\n" { fail("catalog verification failed") }
+  let november = @shell.Cmd("moon", ["run", "cmd/catalog", "--target", target, "--", "examples/catalog/catalog.json", "2026-11-01", "examples/catalog/usages.json", "2", "half-even"]).output()
+  if november.exit_code() != 0 || !november.stdout().contains("USD 1503.00") { fail("catalog version boundary failed") }
+  @fs.write_file(tampered_path, catalog_golden.replace(old="\"on\":\"2026-10-22\"", new="\"on\":\"2026-11-01\""))
+  let catalog_bad = @shell.Cmd("moon", catalog_args + ["--verify", tampered_path]).output()
+  if catalog_bad.exit_code() == 0 || catalog_bad.stdout() != "" || !catalog_bad.stderr().contains("catalog.on") { fail("catalog date substitution must fail") }
+  let catalog_recovery = @shell.Cmd("moon", catalog_args + ["--json"]).output()
+  if catalog_recovery.exit_code() != 0 || catalog_recovery.stdout() != catalog.stdout() { fail("catalog recovery failed") }
   println("file workflow verified on \{target}")
 }

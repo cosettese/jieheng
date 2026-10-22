@@ -12,6 +12,8 @@ pub fn compare_cohort(Plan, Plan, ArrayView[Usage], scale~ : Int32, rounding~ : 
 
 pub fn compare_plans(Plan, Plan, Usage, scale~ : Int32, rounding~ : Rounding) -> Comparison raise PricingError
 
+pub fn compile_catalog(ArrayView[CatalogEntry]) -> Catalog raise PricingError
+
 pub fn compile_package(id~ : String, version~ : String, metric~ : String, unit~ : String, currency~ : String, package_size~ : String, package_price~ : String) -> PackagePlan raise PricingError
 
 pub fn compile_plan(id~ : String, version~ : String, metric~ : String, unit~ : String, currency~ : String, tiers~ : ArrayView[Tier], mode? : PricingMode) -> Plan raise PricingError
@@ -27,6 +29,10 @@ pub fn decode_bill_input(String) -> Array[BillItem] raise PricingError
 pub fn decode_budget(String) -> BudgetQuote raise PricingError
 
 pub fn decode_budget_request(String) -> BudgetRequest raise PricingError
+
+pub fn decode_catalog(String) -> Catalog raise PricingError
+
+pub fn decode_catalog_bill(String) -> CatalogBill raise PricingError
 
 pub fn decode_charge(String) -> Charge raise PricingError
 
@@ -56,6 +62,8 @@ pub fn decode_scheduled(String) -> ScheduledEvidence raise PricingError
 
 pub fn decode_usage(String) -> Usage raise PricingError
 
+pub fn decode_usage_bundle(String) -> Array[Usage] raise PricingError
+
 pub fn encode_analysis(PriceAnalysis) -> String raise PricingError
 
 pub fn encode_bill(Bill) -> String raise PricingError
@@ -65,6 +73,10 @@ pub fn encode_bill_input(ArrayView[BillItem]) -> String raise PricingError
 pub fn encode_budget(BudgetQuote) -> String raise PricingError
 
 pub fn encode_budget_request(BudgetRequest) -> String raise PricingError
+
+pub fn encode_catalog(Catalog) -> String raise PricingError
+
+pub fn encode_catalog_bill(CatalogBill) -> String raise PricingError
 
 pub fn encode_charge(Charge) -> String raise PricingError
 
@@ -94,6 +106,8 @@ pub fn encode_scheduled(ScheduledEvidence) -> String raise PricingError
 
 pub fn encode_usage(Usage) -> String raise PricingError
 
+pub fn encode_usage_bundle(ArrayView[Usage]) -> String raise PricingError
+
 pub fn quote_budget(Plan, BudgetRequest, scale~ : Int32, rounding~ : Rounding) -> BudgetQuote raise PricingError
 
 pub fn quote_quota(Plan, BudgetRequest, scale~ : Int32, rounding~ : Rounding) -> QuotaQuote raise PricingError
@@ -101,6 +115,8 @@ pub fn quote_quota(Plan, BudgetRequest, scale~ : Int32, rounding~ : Rounding) ->
 pub fn rate(Plan, Usage) -> Calculation raise PricingError
 
 pub fn rate_bill(ArrayView[BillItem], scale~ : Int32, rounding~ : Rounding) -> Bill raise PricingError
+
+pub fn rate_catalog(Catalog, String, ArrayView[Usage], scale~ : Int32, rounding~ : Rounding) -> CatalogBill raise PricingError
 
 pub fn rate_charge(Plan, Usage, minimum~ : String, zero_usage~ : ZeroUsageMinimum, scale~ : Int32, rounding~ : Rounding) -> Charge raise PricingError
 
@@ -121,6 +137,8 @@ pub fn verify_bill(ArrayView[BillItem], Bill, scale~ : Int32, rounding~ : Roundi
 pub fn verify_budget(Plan, BudgetRequest, BudgetQuote, scale~ : Int32, rounding~ : Rounding) -> Unit raise PricingError
 
 pub fn verify_calculation(Plan, Usage, Calculation) -> Unit raise PricingError
+
+pub fn verify_catalog(Catalog, String, ArrayView[Usage], CatalogBill, scale~ : Int32, rounding~ : Rounding) -> Unit raise PricingError
 
 pub fn verify_charge(Plan, Usage, Charge, minimum~ : String, zero_usage~ : ZeroUsageMinimum, scale~ : Int32, rounding~ : Rounding) -> Unit raise PricingError
 
@@ -217,6 +235,24 @@ pub(all) struct Calculation {
 pub fn Calculation::equal(Self, Self) -> Bool
 pub fn Calculation::not_equal(Self, Self) -> Bool
 pub fn Calculation::to_repr(Self) -> @debug.Repr
+
+pub struct Catalog {
+  // private fields
+}
+
+pub(all) struct CatalogBill {
+  on : String
+  bill : Bill
+} derive(Eq, @debug.Debug)
+pub fn CatalogBill::equal(Self, Self) -> Bool
+pub fn CatalogBill::not_equal(Self, Self) -> Bool
+pub fn CatalogBill::to_repr(Self) -> @debug.Repr
+
+pub(all) struct CatalogEntry {
+  starts_on : String
+  ends_before : String?
+  tariff : Tariff
+}
 
 pub(all) struct Charge {
   calculation : Calculation
@@ -417,6 +453,11 @@ pub(all) struct Settlement {
 pub fn Settlement::equal(Self, Self) -> Bool
 pub fn Settlement::not_equal(Self, Self) -> Bool
 pub fn Settlement::to_repr(Self) -> @debug.Repr
+
+pub(all) enum Tariff {
+  MeteredTariff(Plan, String, ZeroUsageMinimum)
+  PackageTariff(PackagePlan)
+}
 
 pub(all) struct Tier {
   up_to : String?

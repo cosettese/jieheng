@@ -85,6 +85,11 @@ pub fn decode_bill_input(text : String) -> Array[BillItem] raise PricingError {
 
 ///|
 pub fn encode_bill(bill : Bill) -> String raise PricingError {
+  bounded_json(bill_json(bill))
+}
+
+///|
+fn bill_json(bill : Bill) -> Json raise PricingError {
   if bill.items.length() == 0 || bill.items.length() > 64 {
     invalid("size", "bill.items", "expected 1 to 64 items")
   }
@@ -112,14 +117,19 @@ pub fn encode_bill(bill : Bill) -> String raise PricingError {
       "delta": t.delta,
     },
   }
-  bounded_json(json)
+  json
 }
 
 ///|
 /// Strict structural decode; verify_bill requires the complete trusted manifest.
 pub fn decode_bill(text : String) -> Bill raise PricingError {
+  bill_from_json(parse_document(text))
+}
+
+///|
+fn bill_from_json(value : Json) -> Bill raise PricingError {
   let r = fields(
-    parse_document(text),
+    value,
     ["schema", "customer", "period", "currency", "items", "totals"],
     "bill",
   )
