@@ -278,5 +278,15 @@ async fn main {
   if bq_infeasible.exit_code() == 0 || bq_infeasible.stdout() != "" || !bq_infeasible.stderr().contains("infeasible") { fail("infeasible fixed costs must not yield a zero quote") }
   let bq_recovery = @shell.Cmd("moon", bq_args + ["--json"]).output()
   if bq_recovery.exit_code() != 0 || bq_recovery.stdout() != bq.stdout() { fail("whole-bill quota recovery failed") }
+  let coverage_args = ["run", "cmd/coverage", "--target", target, "--", "examples/catalog/catalog.json", "2026-09-30", "2026-11-02"]
+  let coverage = @shell.Cmd("moon", coverage_args).output()
+  let coverage_expected = "{\"schema\":\"jieheng.coverage.v1\",\"starts_on\":\"2026-09-30\",\"ends_before\":\"2026-11-02\",\"gaps\":[{\"metric\":\"storage-gb-month\",\"starts_on\":\"2026-09-30\",\"ends_before\":\"2026-10-01\"},{\"metric\":\"messages\",\"starts_on\":\"2026-09-30\",\"ends_before\":\"2026-10-01\"}]}\n"
+  if coverage.exit_code() != 0 || coverage.stdout() != coverage_expected { fail("coverage report mismatch: \{coverage.stderr()} \{coverage.stdout()}") }
+  let coverage_bad = @shell.Cmd("moon", coverage_args + ["--require-complete"]).output()
+  if coverage_bad.exit_code() != 2 || coverage_bad.stdout() != "" || !coverage_bad.stderr().contains("2 pricing gaps") { fail("coverage release gate must fail without stdout") }
+  let coverage_good = @shell.Cmd("moon", ["run", "cmd/coverage", "--target", target, "--", "examples/catalog/catalog.json", "2026-10-01", "2026-11-02", "--require-complete"]).output()
+  if coverage_good.exit_code() != 0 || !coverage_good.stdout().contains("\"gaps\":[]") { fail("complete catalog window must pass") }
+  let coverage_recovery = @shell.Cmd("moon", coverage_args).output()
+  if coverage_recovery.exit_code() != 0 || coverage_recovery.stdout() != coverage.stdout() { fail("coverage recovery failed") }
   println("file workflow verified on \{target}")
 }
