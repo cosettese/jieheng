@@ -13,6 +13,11 @@ fn item_kind(value : Json, path : String) -> String raise PricingError {
 pub fn encode_bill_input(
   items : ArrayView[BillItem],
 ) -> String raise PricingError {
+  bounded_json(bill_input_json(items))
+}
+
+///|
+fn bill_input_json(items : ArrayView[BillItem]) -> Json raise PricingError {
   ignore(check_bill(items))
   let values : Array[Json] = items.map(item => {
     match item {
@@ -33,12 +38,17 @@ pub fn encode_bill_input(
     }
   })
   let json : Json = { "schema": "jieheng.bill-input.v1", "items": values }
-  bounded_json(json)
+  json
 }
 
 ///|
 pub fn decode_bill_input(text : String) -> Array[BillItem] raise PricingError {
-  let root = fields(parse_document(text), ["schema", "items"], "bill")
+  bill_input_from_json(parse_document(text))
+}
+
+///|
+fn bill_input_from_json(value : Json) -> Array[BillItem] raise PricingError {
+  let root = fields(value, ["schema", "items"], "bill")
   expect_value(root, "schema", "jieheng.bill-input.v1", "bill")
   let values = bounded_items(root["items"], 64, "bill.items")
   let items : Array[BillItem] = []

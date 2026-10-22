@@ -17,6 +17,8 @@ The customer and period labels in tests and the demo are synthetic. The publishe
 
 ## Ecosystem boundary
 
+The bill-quota example reuses the existing S3 price snapshot and synthetic message package, with a synthetic USD 1503 budget. Independent first-failure enumeration, fixed-item conservation and minimum/rounding tests were written here. It is bounded pricing analysis, not copied portfolio optimization, metering or payment code.
+
 The bill-comparison candidate reuses the existing S3 unit prices. Its USD 1400 floor and USD 0.0007 per-message price are synthetic contract changes, not supplier facts. Both manifests preserve identical usage. Metric alignment and signed-difference tests were written for this project, without copying upstream comparison code or fixtures.
 
 The versioned catalog example reuses the documented S3 snapshot and synthetic message package. The November message price, its effective date and minimum-spend policy are hypothetical demonstration contracts. Timeline grouping, complete metric matching and tests were written here; no external catalog implementation or fixture was copied.

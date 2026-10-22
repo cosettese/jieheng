@@ -259,5 +259,24 @@ async fn main {
   if bc_bad.exit_code() == 0 || bc_bad.stdout() != "" || !bc_bad.stderr().contains("delta") { fail("bill comparison forgery must fail") }
   let bc_recovery = @shell.Cmd("moon", bc_args + ["--json"]).output()
   if bc_recovery.exit_code() != 0 || bc_recovery.stdout() != bc.stdout() { fail("bill comparison recovery failed") }
+  let bq_args = ["run", "cmd/bill-quota", "--target", target, "--", "examples/bill-quota/input.json", "2", "half-even"]
+  let bq = @shell.Cmd("moon", bq_args + ["--json"]).output()
+  let bq_golden = @fs.read_file("examples/bill-quota/report.json").text()
+  if bq.exit_code() != 0 || bq.stdout().trim() != bq_golden.trim() { fail("whole-bill quota mismatch: \{bq.stderr()}") }
+  let bq_plain = @shell.Cmd("moon", bq_args).output()
+  if bq_plain.exit_code() != 0 || !bq_plain.stdout().contains("messages 0..3000") { fail("whole-bill variable quota failed") }
+  let bq_checked = @shell.Cmd("moon", bq_args + ["--verify", "examples/bill-quota/report.json"]).output()
+  if bq_checked.exit_code() != 0 || bq_checked.stdout() != "verified bill quota: USD 1502.55\n" { fail("whole-bill quota verification failed") }
+  let altered_bill = bq_golden.replace(old="\"amount\":\"1503.40\"", new="\"amount\":\"1503.39\"")
+  if altered_bill == bq_golden { fail("bill quota witness fixture did not change") }
+  @fs.write_file(tampered_path, altered_bill)
+  let bq_bad = @shell.Cmd("moon", bq_args + ["--verify", tampered_path]).output()
+  if bq_bad.exit_code() == 0 || bq_bad.stdout() != "" || !bq_bad.stderr().contains("first_unaffordable") { fail("whole-bill witness tampering must fail") }
+  let bq_input = @fs.read_file("examples/bill-quota/input.json").text()
+  @fs.write_file(tampered_path, bq_input.replace(old="\"budget\":\"1503\"", new="\"budget\":\"1499\""))
+  let bq_infeasible = @shell.Cmd("moon", ["run", "cmd/bill-quota", "--target", target, "--", tampered_path, "2", "half-even"]).output()
+  if bq_infeasible.exit_code() == 0 || bq_infeasible.stdout() != "" || !bq_infeasible.stderr().contains("infeasible") { fail("infeasible fixed costs must not yield a zero quote") }
+  let bq_recovery = @shell.Cmd("moon", bq_args + ["--json"]).output()
+  if bq_recovery.exit_code() != 0 || bq_recovery.stdout() != bq.stdout() { fail("whole-bill quota recovery failed") }
   println("file workflow verified on \{target}")
 }

@@ -20,3 +20,5 @@ moon run cmd/budget --target wasm -- examples/quota/hole-plan.json examples/quot
 `encode/decode_quota` 使用独立 `jieheng.quota-quote.v1`，恰含 `schema,request,evidence,first_unaffordable`；request 为完整 BudgetRequestV1，其余是完整 EvidenceV1 或明确的 null。拒绝缺失字段、重复键、未知字段和超 1 Mi UTF-16 单元文档。解码只检查结构，收到 null 不能据此相信没有超支点，必须可信核验。
 
 配额描述的是同一周期内**累计数量对应的一次最终报价**，不表示多次独立下单的金额相加也安全，不包含原始事件计量、并发扣减、实时限流或持续监控。当前不包含最低消费、整包计价、税费、折扣、多指标或时间版本切换。达到 limit 只证明给定范围内安全，不代表域外也安全。低于结算单位的预算仍按精确金额比较，零预算可能因舍入允许正数量。
+
+需要保留其他指标费用并计入最低消费或整包规则时，使用独立的 [整单预算配额](bill-quota.md)，不会改变本接口的单计划语义。
