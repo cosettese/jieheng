@@ -21,6 +21,7 @@
 - [全范围调价审查](docs/analysis.md)：按完整整数域分析金额差异，保留整量价跳变，验证所有分段和极值。
 - [安全预算配额](docs/quota.md)：保证零到配额的每个整数用量都可负担，保留第一个超预算数量的凭证。
 - [版本化多指标目录](docs/catalog.md)：按日期选择阶梯、最低消费与整包规则，要求完整用量覆盖后生成账单。
+- [整单合同比较](docs/bill-comparison.md)：按指标对齐相同用量，分列价格、补差和结算差异，允许计价模型迁移。
 - Wasm、Wasm-GC、JavaScript、Native 使用同一个纯计算库，仅依赖标准库；文件工具使用 `moonbitlang/async`，支持 Wasm 和 Native。
 
 ## 使用
@@ -72,7 +73,7 @@ let settlement = @jieheng.settle(calculation, scale=2, rounding=HalfEven)
 
 ## 后续路线
 
-下一阶段评估整单调价比较及预算工作流中的显式合同组合规则。这些后续能力均未实现；当前遇到相关输入会明确拒绝。
+下一阶段评估预算工作流中的显式合同组合规则。这些后续能力均未实现；当前遇到相关输入会明确拒绝。
 
 ## 开发与验证
 

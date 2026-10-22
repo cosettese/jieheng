@@ -17,6 +17,8 @@ The customer and period labels in tests and the demo are synthetic. The publishe
 
 ## Ecosystem boundary
 
+The bill-comparison candidate reuses the existing S3 unit prices. Its USD 1400 floor and USD 0.0007 per-message price are synthetic contract changes, not supplier facts. Both manifests preserve identical usage. Metric alignment and signed-difference tests were written for this project, without copying upstream comparison code or fixtures.
+
 The versioned catalog example reuses the documented S3 snapshot and synthetic message package. The November message price, its effective date and minimum-spend policy are hypothetical demonstration contracts. Timeline grouping, complete metric matching and tests were written here; no external catalog implementation or fixture was copied.
 
 Safe-prefix quotas reuse the existing S3 price facts and synthetic budget parameters. The three-tier volume-hole fixture (10 / 1 / 20 per unit, bounds 5 / 10 / infinity, budget 12) is constructed for this project, not a supplier quote. First-failure exhaustive tests and independent prefix/witness checks were written here without copying an external implementation or suite. This adds no event-metering, accounting or payment workflow.

@@ -248,5 +248,16 @@ async fn main {
   if catalog_bad.exit_code() == 0 || catalog_bad.stdout() != "" || !catalog_bad.stderr().contains("catalog.on") { fail("catalog date substitution must fail") }
   let catalog_recovery = @shell.Cmd("moon", catalog_args + ["--json"]).output()
   if catalog_recovery.exit_code() != 0 || catalog_recovery.stdout() != catalog.stdout() { fail("catalog recovery failed") }
+  let bc_args = ["run", "cmd/compare-bills", "--target", target, "--", "examples/bill/input.json", "examples/bill-comparison/candidate.json", "2", "half-even"]
+  let bc = @shell.Cmd("moon", bc_args + ["--json"]).output()
+  let bc_golden = @fs.read_file("examples/bill-comparison/report.json").text()
+  if bc.exit_code() != 0 || bc.stdout().trim() != bc_golden.trim() { fail("bill comparison mismatch: \{bc.stderr()}") }
+  let bc_checked = @shell.Cmd("moon", bc_args + ["--verify", "examples/bill-comparison/report.json"]).output()
+  if bc_checked.exit_code() != 0 || bc_checked.stdout() != "verified bill comparison: settled delta -100.8\n" { fail("bill comparison verification failed") }
+  @fs.write_file(tampered_path, bc_golden.replace(old="\"settled_delta\":\"-100.8\"", new="\"settled_delta\":\"0\""))
+  let bc_bad = @shell.Cmd("moon", bc_args + ["--verify", tampered_path]).output()
+  if bc_bad.exit_code() == 0 || bc_bad.stdout() != "" || !bc_bad.stderr().contains("delta") { fail("bill comparison forgery must fail") }
+  let bc_recovery = @shell.Cmd("moon", bc_args + ["--json"]).output()
+  if bc_recovery.exit_code() != 0 || bc_recovery.stdout() != bc.stdout() { fail("bill comparison recovery failed") }
   println("file workflow verified on \{target}")
 }
