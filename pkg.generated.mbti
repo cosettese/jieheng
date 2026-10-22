@@ -144,6 +144,8 @@ pub fn rate_packages(PackagePlan, Usage, scale~ : Int32, rounding~ : Rounding) -
 
 pub fn rate_scheduled(Schedule, String, Usage, scale~ : Int32, rounding~ : Rounding) -> ScheduledEvidence raise PricingError
 
+pub fn render_bill_markdown(ArrayView[BillItem], Bill, scale~ : Int32, rounding~ : Rounding) -> String raise PricingError
+
 pub fn select_plan(Schedule, String) -> Plan raise PricingError
 
 pub fn settle(Calculation, scale~ : Int32, rounding~ : Rounding) -> Settlement raise PricingError

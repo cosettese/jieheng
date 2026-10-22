@@ -288,5 +288,17 @@ async fn main {
   if coverage_good.exit_code() != 0 || !coverage_good.stdout().contains("\"gaps\":[]") { fail("complete catalog window must pass") }
   let coverage_recovery = @shell.Cmd("moon", coverage_args).output()
   if coverage_recovery.exit_code() != 0 || coverage_recovery.stdout() != coverage.stdout() { fail("coverage recovery failed") }
+  let explain_args = ["run", "cmd/explain", "--target", target, "--", "examples/bill/input.json", "examples/bill/bill.json", "2", "half-even"]
+  let explained = @shell.Cmd("moon", explain_args).output()
+  let statement = @fs.read_file("examples/report/statement.md").text()
+  if explained.exit_code() != 0 || explained.stdout() != statement { fail("Markdown statement differs on \{target}: \{explained.stderr()}") }
+  @fs.write_file(tampered_path, bill_golden.replace(old="\"unused_units\":\"499\"", new="\"unused_units\":\"500\""))
+  let explanation_bad = @shell.Cmd("moon", ["run", "cmd/explain", "--target", target, "--", "examples/bill/input.json", tampered_path, "2", "half-even"]).output()
+  if explanation_bad.exit_code() == 0 || explanation_bad.stdout() != "" || !explanation_bad.stderr().contains("capacity") { fail("tampered evidence must not be rendered as an explanation") }
+  @fs.write_file(tampered_path, bill_golden.replace(old="\"schema\":", new="\"unsupported\":true,\"schema\":"))
+  let explanation_unsupported = @shell.Cmd("moon", ["run", "cmd/explain", "--target", target, "--", "examples/bill/input.json", tampered_path, "2", "half-even"]).output()
+  if explanation_unsupported.exit_code() == 0 || explanation_unsupported.stdout() != "" || !explanation_unsupported.stderr().contains("unsupported") { fail("unsupported report input must not be silently dropped") }
+  let explanation_recovery = @shell.Cmd("moon", explain_args).output()
+  if explanation_recovery.exit_code() != 0 || explanation_recovery.stdout() != statement { fail("statement recovery failed") }
   println("file workflow verified on \{target}")
 }

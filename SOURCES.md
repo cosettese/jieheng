@@ -17,6 +17,8 @@ The customer and period labels in tests and the demo are synthetic. The publishe
 
 ## Ecosystem boundary
 
+The Markdown statement reuses the existing mixed-bill contract, public S3 unit prices and explicitly synthetic usage/minimum/message package. Rendering, escaping, fence selection and tests were written here; no external template, report implementation, customer data or fixture was copied. JSON appendices preserve the existing formats and source boundary. Project code and documentation remain Apache-2.0.
+
 Catalog coverage checks reuse the existing catalog fixture and its documented public-price/synthetic-contract boundary. Interval-complement code and exhaustive small-window tests were written for this project, without copying a calendar library or external tests. Coverage is not a claim about supplier price validity.
 
 The bill-quota example reuses the existing S3 price snapshot and synthetic message package, with a synthetic USD 1503 budget. Independent first-failure enumeration, fixed-item conservation and minimum/rounding tests were written here. It is bounded pricing analysis, not copied portfolio optimization, metering or payment code.
