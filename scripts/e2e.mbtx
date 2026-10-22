@@ -218,5 +218,22 @@ async fn main {
   if analysis_bad.exit_code() == 0 || analysis_bad.stdout() != "" || !analysis_bad.stderr().contains("extrema") { fail("analysis extrema tampering must fail") }
   let analysis_recovery = @shell.Cmd("moon", analysis_args + ["--json"]).output()
   if analysis_recovery.exit_code() != 0 || analysis_recovery.stdout() != analysis.stdout() { fail("analysis recovery failed") }
+  for (plan, request, fixture, expected) in [
+    ("examples/s3/plan.json", "examples/budget/request.json", "s3-quote", "65854"),
+    ("examples/quota/hole-plan.json", "examples/quota/hole-request.json", "hole-quote", "1"),
+  ] {
+    let quota_args = ["run", "cmd/quota", "--target", target, "--", plan, request, "2", "half-even"]
+    let quota = @shell.Cmd("moon", quota_args + ["--json"]).output()
+    let quota_golden = @fs.read_file("examples/quota/\{fixture}.json").text()
+    if quota.exit_code() != 0 || quota.stdout().trim() != quota_golden.trim() { fail("quota mismatch: \{quota.stderr()}") }
+    let quota_verified = @shell.Cmd("moon", quota_args + ["--verify", "examples/quota/\{fixture}.json"]).output()
+    if quota_verified.exit_code() != 0 || quota_verified.stdout() != "verified quota: 0..\{expected}\n" { fail("quota verification failed") }
+    let altered_request = quota_golden.replace(old="\"customer\":", new="\"unsupported\":true,\"customer\":")
+    @fs.write_file(tampered_path, altered_request)
+    let quota_bad = @shell.Cmd("moon", quota_args + ["--verify", tampered_path]).output()
+    if quota_bad.exit_code() == 0 || quota_bad.stdout() != "" || !quota_bad.stderr().contains("unsupported") { fail("quota unsupported data must fail") }
+    let quota_recovery = @shell.Cmd("moon", quota_args + ["--json"]).output()
+    if quota_recovery.exit_code() != 0 || quota_recovery.stdout() != quota.stdout() { fail("quota recovery failed") }
+  }
   println("file workflow verified on \{target}")
 }

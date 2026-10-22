@@ -1,0 +1,1 @@
+{"schema":"jieheng.plan.v1","id":"volume-hole-example","version":"v1","metric":"calls","unit":"call","currency":"USD","mode":"volume","tiers":[{"up_to":"5","unit_price":"10"},{"up_to":"10","unit_price":"1"},{"up_to":null,"unit_price":"20"}]}

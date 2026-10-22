@@ -48,6 +48,8 @@ pub fn decode_packages(String) -> PackageEvidence raise PricingError
 
 pub fn decode_plan(String) -> Plan raise PricingError
 
+pub fn decode_quota(String) -> QuotaQuote raise PricingError
+
 pub fn decode_schedule(String) -> Schedule raise PricingError
 
 pub fn decode_scheduled(String) -> ScheduledEvidence raise PricingError
@@ -84,6 +86,8 @@ pub fn encode_packages(PackageEvidence) -> String raise PricingError
 
 pub fn encode_plan(Plan) -> String
 
+pub fn encode_quota(QuotaQuote) -> String raise PricingError
+
 pub fn encode_schedule(Schedule) -> String raise PricingError
 
 pub fn encode_scheduled(ScheduledEvidence) -> String raise PricingError
@@ -91,6 +95,8 @@ pub fn encode_scheduled(ScheduledEvidence) -> String raise PricingError
 pub fn encode_usage(Usage) -> String raise PricingError
 
 pub fn quote_budget(Plan, BudgetRequest, scale~ : Int32, rounding~ : Rounding) -> BudgetQuote raise PricingError
+
+pub fn quote_quota(Plan, BudgetRequest, scale~ : Int32, rounding~ : Rounding) -> QuotaQuote raise PricingError
 
 pub fn rate(Plan, Usage) -> Calculation raise PricingError
 
@@ -127,6 +133,8 @@ pub fn verify_evidence(Plan, Usage, Evidence, scale~ : Int32, rounding~ : Roundi
 pub fn verify_invoice(ArrayView[ChargeInput], Invoice, scale~ : Int32, rounding~ : Rounding) -> Unit raise PricingError
 
 pub fn verify_packages(PackagePlan, Usage, PackageEvidence, scale~ : Int32, rounding~ : Rounding) -> Unit raise PricingError
+
+pub fn verify_quota(Plan, BudgetRequest, QuotaQuote, scale~ : Int32, rounding~ : Rounding) -> Unit raise PricingError
 
 pub fn verify_scheduled(Schedule, String, Usage, ScheduledEvidence, scale~ : Int32, rounding~ : Rounding) -> Unit raise PricingError
 
@@ -366,6 +374,15 @@ pub(all) enum PricingMode {
 pub fn PricingMode::equal(Self, Self) -> Bool
 pub fn PricingMode::not_equal(Self, Self) -> Bool
 pub fn PricingMode::to_repr(Self) -> @debug.Repr
+
+pub(all) struct QuotaQuote {
+  request : BudgetRequest
+  evidence : Evidence
+  first_unaffordable : Evidence?
+} derive(Eq, @debug.Debug)
+pub fn QuotaQuote::equal(Self, Self) -> Bool
+pub fn QuotaQuote::not_equal(Self, Self) -> Bool
+pub fn QuotaQuote::to_repr(Self) -> @debug.Repr
 
 pub(all) enum Rounding {
   HalfEven

@@ -19,3 +19,5 @@ moon run cmd/budget --target wasm -- examples/s3/plan.json examples/budget/reque
 `encode/decode_budget_request`：`jieheng.budget-request.v1` 恰含 `schema,customer,period,budget,limit`。`encode/decode_budget`：`jieheng.budget-quote.v1` 恰含 `schema,request,evidence`，后两者是完整请求与 EvidenceV1。原请求字段保留，包括预算末尾小数零；未知字段、重复键、超限数值或超过 1 Mi UTF-16 单元的文档拒绝。报价解码只校验结构，接受前必须可信核验。
 
 当前不支持整包计划、最低消费、多指标组合、税费、折扣、汇率、跨期额度或自动限流。计划中隐含之外的收费不能加入预算请求后被忽略；需要完整支持后才能估算。`limit` 表示搜索范围，结果等于它时不意味着提高上限后仍无可行用量。
+
+需要“范围内每个用量都不超预算”的安全配额时，使用独立的 [quote_quota 工作流](quota.md)，不要将整量价最大可行解当作前缀安全保证。
