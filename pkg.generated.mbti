@@ -6,6 +6,8 @@ import {
 }
 
 // Values
+pub fn analyze_prices(Plan, Plan, String) -> PriceAnalysis raise PricingError
+
 pub fn compare_cohort(Plan, Plan, ArrayView[Usage], scale~ : Int32, rounding~ : Rounding) -> CohortComparison raise PricingError
 
 pub fn compare_plans(Plan, Plan, Usage, scale~ : Int32, rounding~ : Rounding) -> Comparison raise PricingError
@@ -15,6 +17,8 @@ pub fn compile_package(id~ : String, version~ : String, metric~ : String, unit~ 
 pub fn compile_plan(id~ : String, version~ : String, metric~ : String, unit~ : String, currency~ : String, tiers~ : ArrayView[Tier], mode? : PricingMode) -> Plan raise PricingError
 
 pub fn compile_schedule(ArrayView[EffectivePlan]) -> Schedule raise PricingError
+
+pub fn decode_analysis(String) -> PriceAnalysis raise PricingError
 
 pub fn decode_bill(String) -> Bill raise PricingError
 
@@ -49,6 +53,8 @@ pub fn decode_schedule(String) -> Schedule raise PricingError
 pub fn decode_scheduled(String) -> ScheduledEvidence raise PricingError
 
 pub fn decode_usage(String) -> Usage raise PricingError
+
+pub fn encode_analysis(PriceAnalysis) -> String raise PricingError
 
 pub fn encode_bill(Bill) -> String raise PricingError
 
@@ -101,6 +107,8 @@ pub fn rate_scheduled(Schedule, String, Usage, scale~ : Int32, rounding~ : Round
 pub fn select_plan(Schedule, String) -> Plan raise PricingError
 
 pub fn settle(Calculation, scale~ : Int32, rounding~ : Rounding) -> Settlement raise PricingError
+
+pub fn verify_analysis(Plan, Plan, String, PriceAnalysis) -> Unit raise PricingError
 
 pub fn verify_bill(ArrayView[BillItem], Bill, scale~ : Int32, rounding~ : Rounding) -> Unit raise PricingError
 
@@ -313,6 +321,43 @@ pub struct Plan {
   // private fields
 }
 pub fn Plan::mode(Self) -> PricingMode
+
+pub(all) struct PlanRef {
+  id : String
+  version : String
+} derive(Eq, @debug.Debug)
+pub fn PlanRef::equal(Self, Self) -> Bool
+pub fn PlanRef::not_equal(Self, Self) -> Bool
+pub fn PlanRef::to_repr(Self) -> @debug.Repr
+
+pub(all) struct PriceAnalysis {
+  baseline : PlanRef
+  candidate : PlanRef
+  currency : String
+  metric : String
+  unit : String
+  limit : String
+  spans : Array[PriceSpan]
+  minimum_delta : String
+  minimum_at : String
+  maximum_delta : String
+  maximum_at : String
+} derive(Eq, @debug.Debug)
+pub fn PriceAnalysis::equal(Self, Self) -> Bool
+pub fn PriceAnalysis::not_equal(Self, Self) -> Bool
+pub fn PriceAnalysis::to_repr(Self) -> @debug.Repr
+
+pub(all) struct PriceSpan {
+  from_quantity : String
+  to_quantity : String
+  baseline_total : String
+  candidate_total : String
+  baseline_step : String
+  candidate_step : String
+} derive(Eq, @debug.Debug)
+pub fn PriceSpan::equal(Self, Self) -> Bool
+pub fn PriceSpan::not_equal(Self, Self) -> Bool
+pub fn PriceSpan::to_repr(Self) -> @debug.Repr
 
 pub(all) enum PricingMode {
   Graduated

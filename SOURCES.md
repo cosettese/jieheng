@@ -17,6 +17,8 @@ The customer and period labels in tests and the demo are synthetic. The publishe
 
 ## Ecosystem boundary
 
+Whole-domain price analysis reuses the documented Stripe graduated/volume numerical rules with a synthetic limit of 25. The piecewise-affine algorithm, independent truncated-sum checker and exhaustive forward-pricing regression tests were written here; no external optimizer, curve-analysis implementation or test suite was copied. No uniqueness or performance advantage is asserted.
+
 The mixed bill example combines the already documented S3 price snapshot and synthetic message package, usage and minimum-spend parameters. No new supplier price is asserted. Tagged-model composition, duplicate-metric checks and regression tests were written for this project without copying upstream code or fixtures.
 
 Budget inversion (2026-10-22) reuses the existing S3 price facts with a synthetic USD 1500 budget and 100000-unit search ceiling. No optimizer implementation or tests were copied. Exhaustive forward enumeration is the test oracle; maximality verification uses separately derived rounding thresholds. Stripe's existing public volume-pricing example also documents that crossing tiers can decrease totals, motivating the per-tier search rather than a globally monotone assumption.

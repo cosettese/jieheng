@@ -205,5 +205,18 @@ async fn main {
   if bill_bad.exit_code() == 0 || bill_bad.stdout() != "" || !bill_bad.stderr().contains("capacity") { fail("mixed package tampering must fail") }
   let bill_recovery = @shell.Cmd("moon", bill_args + ["--json"]).output()
   if bill_recovery.exit_code() != 0 || bill_recovery.stdout() != bill.stdout() { fail("mixed bill recovery failed") }
+  let analysis_args = ["run", "cmd/analyze", "--target", target, "--", "examples/stripe/plan.json", "examples/stripe-volume/plan.json", "25"]
+  let analysis = @shell.Cmd("moon", analysis_args + ["--json"]).output()
+  let analysis_golden = @fs.read_file("examples/analysis/report.json").text()
+  if analysis.exit_code() != 0 || analysis.stdout().trim() != analysis_golden.trim() { fail("price analysis mismatch: \{analysis.stderr()}") }
+  let analysis_verified = @shell.Cmd("moon", analysis_args + ["--verify", "examples/analysis/report.json"]).output()
+  if analysis_verified.exit_code() != 0 || analysis_verified.stdout() != "verified analysis: 3 spans\n" { fail("price analysis verification failed") }
+  let altered_extreme = analysis_golden.replace(old="\"minimum_delta\":\"-7.5\"", new="\"minimum_delta\":\"0\"")
+  if altered_extreme == analysis_golden { fail("analysis tamper fixture unchanged") }
+  @fs.write_file(tampered_path, altered_extreme)
+  let analysis_bad = @shell.Cmd("moon", analysis_args + ["--verify", tampered_path]).output()
+  if analysis_bad.exit_code() == 0 || analysis_bad.stdout() != "" || !analysis_bad.stderr().contains("extrema") { fail("analysis extrema tampering must fail") }
+  let analysis_recovery = @shell.Cmd("moon", analysis_args + ["--json"]).output()
+  if analysis_recovery.exit_code() != 0 || analysis_recovery.stdout() != analysis.stdout() { fail("analysis recovery failed") }
   println("file workflow verified on \{target}")
 }
