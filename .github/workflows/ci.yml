@@ -17,16 +17,5 @@ jobs:
       - uses: hustcer/setup-moonbit@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - run: moon version --all
       - run: moon update
-      - run: moon fmt
-      - run: moon info
-      - run: git diff --exit-code
-      - run: moon check --target all --deny-warn
-      - run: moon test --target all --deny-warn
-      - run: moon run cmd/demo --target wasm
-      - run: moon run cmd/demo --target wasm-gc
-      - run: moon run cmd/demo --target js
-      - run: moon run cmd/demo --target native
-      - run: moon run scripts/e2e.mbtx wasm
-      - run: moon run scripts/e2e.mbtx native
+      - run: moon run scripts/verify.mbtx all HEAD

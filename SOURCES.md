@@ -19,6 +19,8 @@ The strict JSON ingress passes `max_nesting_depth=32` to the installed MoonBit c
 
 The independent consumer module uses only Jieheng public APIs. Its workflow tests reuse the existing Stripe teaching numbers, with explicitly synthetic clients, minimum and message-package rules. No external integration implementation or tests were copied; the module is Apache-2.0 like the rest of this repository.
 
+The release verifier is project-authored `.mbtx` automation using MoonBit async process/filesystem APIs and external Git/tar tools; it copies no release-helper implementation. Source snapshots exclude local build outputs, while toolchain and dependency caches may be reused. Verification summaries describe executed checks, not a signature or a claim of fully offline builds.
+
 ## Ecosystem boundary
 
 The Markdown statement reuses the existing mixed-bill contract, public S3 unit prices and explicitly synthetic usage/minimum/message package. Rendering, escaping, fence selection and tests were written here; no external template, report implementation, customer data or fixture was copied. JSON appendices preserve the existing formats and source boundary. Project code and documentation remain Apache-2.0.
