@@ -17,6 +17,8 @@ The customer and period labels in tests and the demo are synthetic. The publishe
 
 The strict JSON ingress passes `max_nesting_depth=32` to the installed MoonBit core parser, mapping its depth error to the existing Jieheng diagnostic. No parser source or upstream tests were copied; depth/size boundary and recovery regressions were written here. This uses the verified core API shipped with the documented toolchain.
 
+The independent consumer module uses only Jieheng public APIs. Its workflow tests reuse the existing Stripe teaching numbers, with explicitly synthetic clients, minimum and message-package rules. No external integration implementation or tests were copied; the module is Apache-2.0 like the rest of this repository.
+
 ## Ecosystem boundary
 
 The Markdown statement reuses the existing mixed-bill contract, public S3 unit prices and explicitly synthetic usage/minimum/message package. Rendering, escaping, fence selection and tests were written here; no external template, report implementation, customer data or fixture was copied. JSON appendices preserve the existing formats and source boundary. Project code and documentation remain Apache-2.0.

@@ -29,7 +29,7 @@
 
 ## 使用
 
-模块名为 `cosettese/jieheng`。目前从源码使用；尚未发布到 Mooncakes。
+模块名为 `cosettese/jieheng`。目前从源码使用；尚未发布到 Mooncakes。[独立消费模块](integration/consumer/README.md) 展示如何通过源码工作区依赖本库，完成归档、核验与报告工作流。根目录 `moon.work` 同时测试主库和消费模块。
 
 ```text
 moon update
