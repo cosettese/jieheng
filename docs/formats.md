@@ -1,6 +1,6 @@
 # JSON exchange and file workflow
 
-The library accepts only versioned, explicitly supported fields. JSON inputs are limited to 1,048,576 UTF-16 code units and 32 nesting levels. Every object is checked for duplicate keys after escape decoding. Unknown fields fail with `unknown`; they are never dropped. Whitespace and object field order do not affect semantics.
+The library accepts only versioned, explicitly supported fields. JSON inputs are limited to 1,048,576 UTF-16 code units and 32 nesting levels. Size is checked before parsing, and the parser enforces the nesting limit before constructing an over-deep value. Every object is checked for duplicate keys after escape decoding. Errors retain the `size`, `depth`, `duplicate` and `json` codes; when malformed input has several faults the first encountered guard determines the diagnostic. Unknown fields fail with `unknown`; they are never dropped. Whitespace and object field order do not affect semantics.
 
 ## Plan v1
 

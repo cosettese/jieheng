@@ -3,7 +3,13 @@ fn parse_document(text : String) -> Json raise PricingError {
   if text.length() > 1048576 {
     invalid("size", "$", "JSON input exceeds 1048576 UTF-16 code units")
   }
-  let value = @json.parse(text) catch {
+  let value = @json.parse(text, max_nesting_depth=32) catch {
+    @json.DepthLimitExceeded =>
+      raise Invalid(
+        code="depth",
+        path="$",
+        message="maximum JSON nesting depth is 32",
+      )
     e => raise Invalid(code="json", path="$", message="invalid JSON: \{e}")
   }
   // Core's Json object model is a map. Inspect original string tokens as well,

@@ -15,6 +15,8 @@ Checked on 2026-10-21. Project source is provided under Apache-2.0. No upstream 
 
 The customer and period labels in tests and the demo are synthetic. The published price example is a reproducible teaching case, not a live price quotation or customer usage dataset.
 
+The strict JSON ingress passes `max_nesting_depth=32` to the installed MoonBit core parser, mapping its depth error to the existing Jieheng diagnostic. No parser source or upstream tests were copied; depth/size boundary and recovery regressions were written here. This uses the verified core API shipped with the documented toolchain.
+
 ## Ecosystem boundary
 
 The Markdown statement reuses the existing mixed-bill contract, public S3 unit prices and explicitly synthetic usage/minimum/message package. Rendering, escaping, fence selection and tests were written here; no external template, report implementation, customer data or fixture was copied. JSON appendices preserve the existing formats and source boundary. Project code and documentation remain Apache-2.0.
