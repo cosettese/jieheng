@@ -300,5 +300,23 @@ async fn main {
   if explanation_unsupported.exit_code() == 0 || explanation_unsupported.stdout() != "" || !explanation_unsupported.stderr().contains("unsupported") { fail("unsupported report input must not be silently dropped") }
   let explanation_recovery = @shell.Cmd("moon", explain_args).output()
   if explanation_recovery.exit_code() != 0 || explanation_recovery.stdout() != statement { fail("statement recovery failed") }
+  let migration_args = ["run", "cmd/migration", "--target", target, "--", "examples/catalog/catalog.json", "examples/migration/candidate.json", "2026-10-01", "2026-11-02"]
+  let migration = @shell.Cmd("moon", migration_args).output()
+  let migration_golden = @fs.read_file("examples/migration/report.json").text()
+  if migration.exit_code() != 0 || migration.stdout().trim() != migration_golden.trim() { fail("migration report mismatch: \{migration.stderr()}") }
+  let migration_verified = @shell.Cmd("moon", migration_args + ["--verify", "examples/migration/report.json"]).output()
+  if migration_verified.exit_code() != 0 || migration_verified.stdout() != migration.stdout() { fail("migration verification failed") }
+  let migration_blocked = @shell.Cmd("moon", migration_args + ["--require-compatible"]).output()
+  if migration_blocked.exit_code() != 2 || migration_blocked.stdout() != "" || !migration_blocked.stderr().contains("mapping or review") { fail("migration gap must block release") }
+  let migration_compatible_args = ["run", "cmd/migration", "--target", target, "--", "examples/catalog/catalog.json", "examples/migration/candidate.json", "2026-10-17", "2026-11-02"]
+  let migration_compatible = @shell.Cmd("moon", migration_compatible_args + ["--require-compatible"]).output()
+  if migration_compatible.exit_code() != 0 { fail("covered review changes should be structurally compatible") }
+  let migration_review = @shell.Cmd("moon", migration_compatible_args + ["--require-unchanged"]).output()
+  if migration_review.exit_code() != 2 || migration_review.stdout() != "" { fail("price changes must still require review") }
+  @fs.write_file(tampered_path, migration_golden.replace(old="candidate-gap",new="pricing-changed"))
+  let migration_bad = @shell.Cmd("moon", migration_args + ["--verify", tampered_path]).output()
+  if migration_bad.exit_code() == 0 || migration_bad.stdout() != "" || !migration_bad.stderr().contains("changes") { fail("migration classification tampering must fail") }
+  let migration_recovery = @shell.Cmd("moon", migration_args).output()
+  if migration_recovery.exit_code() != 0 || migration_recovery.stdout() != migration.stdout() { fail("migration recovery failed") }
   println("file workflow verified on \{target}")
 }

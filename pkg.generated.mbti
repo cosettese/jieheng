@@ -8,6 +8,8 @@ import {
 // Values
 pub fn analyze_prices(Plan, Plan, String) -> PriceAnalysis raise PricingError
 
+pub fn audit_catalog_migration(Catalog, Catalog, String, String) -> CatalogMigration raise PricingError
+
 pub fn catalog_gaps(Catalog, String, String) -> Array[CatalogGap] raise PricingError
 
 pub fn compare_bills(ArrayView[BillItem], ArrayView[BillItem], scale~ : Int32, rounding~ : Rounding) -> BillComparison raise PricingError
@@ -43,6 +45,8 @@ pub fn decode_budget_request(String) -> BudgetRequest raise PricingError
 pub fn decode_catalog(String) -> Catalog raise PricingError
 
 pub fn decode_catalog_bill(String) -> CatalogBill raise PricingError
+
+pub fn decode_catalog_migration(String) -> CatalogMigration raise PricingError
 
 pub fn decode_charge(String) -> Charge raise PricingError
 
@@ -93,6 +97,8 @@ pub fn encode_budget_request(BudgetRequest) -> String raise PricingError
 pub fn encode_catalog(Catalog) -> String raise PricingError
 
 pub fn encode_catalog_bill(CatalogBill) -> String raise PricingError
+
+pub fn encode_catalog_migration(CatalogMigration) -> String raise PricingError
 
 pub fn encode_charge(Charge) -> String raise PricingError
 
@@ -163,6 +169,8 @@ pub fn verify_budget(Plan, BudgetRequest, BudgetQuote, scale~ : Int32, rounding~
 pub fn verify_calculation(Plan, Usage, Calculation) -> Unit raise PricingError
 
 pub fn verify_catalog(Catalog, String, ArrayView[Usage], CatalogBill, scale~ : Int32, rounding~ : Rounding) -> Unit raise PricingError
+
+pub fn verify_catalog_migration(Catalog, Catalog, String, String, CatalogMigration) -> Unit raise PricingError
 
 pub fn verify_charge(Plan, Usage, Charge, minimum~ : String, zero_usage~ : ZeroUsageMinimum, scale~ : Int32, rounding~ : Rounding) -> Unit raise PricingError
 
@@ -313,6 +321,25 @@ pub fn CatalogBill::equal(Self, Self) -> Bool
 pub fn CatalogBill::not_equal(Self, Self) -> Bool
 pub fn CatalogBill::to_repr(Self) -> @debug.Repr
 
+pub(all) enum CatalogChange {
+  MetricAdded
+  MetricRemoved
+  BaselineGap
+  CandidateGap
+  CurrencyChanged
+  UnitChanged
+  IdentityChanged
+  VersionChanged
+  ModelChanged
+  PricingChanged
+  MinimumChanged
+  ZeroPolicyChanged
+} derive(Eq, @debug.Debug)
+pub fn CatalogChange::equal(Self, Self) -> Bool
+pub fn CatalogChange::is_blocking(Self) -> Bool
+pub fn CatalogChange::not_equal(Self, Self) -> Bool
+pub fn CatalogChange::to_repr(Self) -> @debug.Repr
+
 pub(all) struct CatalogEntry {
   starts_on : String
   ends_before : String?
@@ -327,6 +354,15 @@ pub(all) struct CatalogGap {
 pub fn CatalogGap::equal(Self, Self) -> Bool
 pub fn CatalogGap::not_equal(Self, Self) -> Bool
 pub fn CatalogGap::to_repr(Self) -> @debug.Repr
+
+pub(all) struct CatalogMigration {
+  starts_on : String
+  ends_before : String
+  spans : Array[MigrationSpan]
+} derive(Eq, @debug.Debug)
+pub fn CatalogMigration::equal(Self, Self) -> Bool
+pub fn CatalogMigration::not_equal(Self, Self) -> Bool
+pub fn CatalogMigration::to_repr(Self) -> @debug.Repr
 
 pub(all) struct Charge {
   calculation : Calculation
@@ -413,6 +449,18 @@ pub(all) struct Line {
 pub fn Line::equal(Self, Self) -> Bool
 pub fn Line::not_equal(Self, Self) -> Bool
 pub fn Line::to_repr(Self) -> @debug.Repr
+
+pub(all) struct MigrationSpan {
+  metric : String
+  starts_on : String
+  ends_before : String
+  baseline_entry : Int32?
+  candidate_entry : Int32?
+  changes : Array[CatalogChange]
+} derive(Eq, @debug.Debug)
+pub fn MigrationSpan::equal(Self, Self) -> Bool
+pub fn MigrationSpan::not_equal(Self, Self) -> Bool
+pub fn MigrationSpan::to_repr(Self) -> @debug.Repr
 
 pub(all) struct PackageEvidence {
   plan_id : String

@@ -23,6 +23,8 @@ The release verifier is project-authored `.mbtx` automation using MoonBit async 
 
 ## Ecosystem boundary
 
+Catalog migration auditing uses project-defined structural/review classifications over the two complete trusted timelines. Interval generation, an independent boundary/selection checker and adversarial tests were written here without copying upstream migration code. Its sample reuses the existing public S3 unit-price facts with hypothetical floor/message-price/date changes; these changes are not supplier facts.
+
 The Markdown statement reuses the existing mixed-bill contract, public S3 unit prices and explicitly synthetic usage/minimum/message package. Rendering, escaping, fence selection and tests were written here; no external template, report implementation, customer data or fixture was copied. JSON appendices preserve the existing formats and source boundary. Project code and documentation remain Apache-2.0.
 
 Catalog coverage checks reuse the existing catalog fixture and its documented public-price/synthetic-contract boundary. Interval-complement code and exhaustive small-window tests were written for this project, without copying a calendar library or external tests. Coverage is not a claim about supplier price validity.
