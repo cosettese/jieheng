@@ -21,3 +21,4 @@ jobs:
       - run: moon run scripts/verify.mbtx all HEAD
       - run: moon run scripts/distribution.mbtx all archive
       - run: moon run scripts/generative.mbtx all
+      - run: moon run scripts/benchmark.mbtx all baseline

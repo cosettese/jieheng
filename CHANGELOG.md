@@ -10,6 +10,7 @@ This is a source release candidate; this file does not assert registry publicati
 - Existing v1 single-plan, evidence, bill and comparison exchanges retain their checked-in canonical output.
 - Packaging excludes development workspaces and nested consumer modules; package-archive consumption is checked independently.
 - Seeded generated correctness checks add independent bounded pricing/rounding/quota oracles, mutation rejection, one-case replay and backend fingerprint comparison.
+- Release-runtime benchmarks cover nine pricing, verification and catalog workloads, with source manifests and explicit whole-process RSS availability.
 
 ## Earlier source milestones
 

@@ -1,5 +1,7 @@
 # Sources and licensing
 
+The benchmark workloads and resource wrapper were written for this project, using synthetic prices and catalogs. Timing and summary statistics use moonbitlang/core/bench (Apache-2.0) through its public API; no upstream benchmark implementation or fixture was copied. GNU/BSD time output supplies whole-process RSS on supported hosts. The baseline makes no comparative performance claim.
+
 Checked on 2026-10-21. Project source is provided under Apache-2.0. No upstream pricing implementation or test suite was copied.
 
 | Resource | Use | License / status |

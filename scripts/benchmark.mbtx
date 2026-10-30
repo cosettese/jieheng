@@ -1,0 +1,128 @@
+import {
+  "moonbitlang/async@0.22.5",
+  "moonbitlang/async@0.22.5/shell",
+  "moonbitlang/async@0.22.5/fs",
+  "moonbitlang/core/env",
+  "moonbitlang/core/json",
+}
+
+async fn command(program : String,args : Array[String]) -> String {
+  let output = @shell.Cmd(program,args).output()
+  if output.exit_code()!=0 {fail("\{program} failed: \{output.stderr()} \{output.stdout()}")}
+  output.stdout()
+}
+
+fn number_text(text : String) -> Bool {
+  !text.is_empty() && text.iter().all(c => c>='0' && c<='9')
+}
+
+fn peak_rss(text : String, darwin : Bool) -> String raise {
+  for view in text.split("\n") {
+    let line = view.trim().to_owned()
+    let numeric = if darwin && line.contains("maximum resident set size") {
+      Some(line.split("maximum resident set size").collect()[0].trim().to_owned())
+    } else if !darwin && line.has_prefix("Maximum resident set size (kbytes):") {
+      Some(line.split(":").collect()[1].trim().to_owned())
+    } else {None}
+    if numeric is Some(n) && number_text(n) {
+      let value = BigInt::from_string(n)
+      return (value * (if darwin {1N} else {1024N})).to_string()
+    }
+  }
+  fail("could not parse runtime peak RSS; inspect retained resource log")
+}
+
+fn scrub_versions(raw : String) -> String {
+  let lines : Array[String] = []
+  for view in raw.split("\n") {
+    let line = view.to_owned()
+    if (line.has_prefix("moon ") || line.has_prefix("moonc ") || line.has_prefix("moonrun ")) && line.contains(")") {
+      lines.push(line.split(")").collect()[0].to_owned() + ")")
+    }
+  }
+  lines.join("\n")
+}
+
+async fn main {
+  assert_eq(peak_rss("Maximum resident set size (kbytes): 1234\n", false), "1263616")
+  assert_eq(peak_rss("  123456 maximum resident set size\n", true), "123456")
+  let args = @env.args()
+  if args.length()!=3 || (args[1]!="portable" && args[1]!="all") ||
+    (args[2]!="baseline" && args[2]!="smoke") {fail("usage: moon run scripts/benchmark.mbtx portable|all baseline|smoke")}
+  let windows = @env.get_env_var("OS")==Some("Windows_NT")
+  let system = if windows {"Windows"} else {command("uname",["-s"]).trim().to_owned()}
+  let arch = if windows {@env.get_env_var("PROCESSOR_ARCHITECTURE").unwrap_or("unknown")} else {command("uname",["-m"]).trim().to_owned()}
+  let cpu = if windows {@env.get_env_var("PROCESSOR_IDENTIFIER").unwrap_or("unknown")} else if system=="Darwin" {
+    command("sysctl",["-n","machdep.cpu.brand_string"]).trim().to_owned()
+  } else {
+    let mut model = "unknown"
+    if @fs.exists("/proc/cpuinfo") {
+      for view in @fs.read_file("/proc/cpuinfo").text().split("\n") {
+        let line = view.trim().to_owned()
+        if line.has_prefix("model name") && line.contains(":") {
+          model=line.split(":").collect()[1].trim().to_owned()
+          break
+        }
+      }
+    }
+    model
+  }
+  let root = command("git",["rev-parse","--show-toplevel"]).trim().to_owned()
+  let head = command("git",["rev-parse","HEAD"]).trim().to_owned()
+  let clean = command("git",["status","--porcelain"]).trim().is_empty()
+  let files = command("git",["ls-files","--cached","--others","--exclude-standard","-z"]).split("\u{0}").map(p => p.to_owned()).filter(p =>
+    p.has_suffix(".mbt") || p.has_suffix(".mbti") || p.has_suffix(".mbtx") || p.has_suffix(".mbt.md") ||
+    p.has_suffix("moon.mod") || p.has_suffix("moon.pkg") || p=="moon.work").collect()
+  files.sort()
+  let hash_text = command("git",["hash-object","--no-filters","--",..files])
+  let hashes = hash_text.split("\n").map(v => v.trim().to_owned()).filter(v => !v.is_empty()).collect()
+  if hashes.length()!=files.length() {fail("source manifest hash count mismatch")}
+  let sources : Array[Json] = files.mapi((i,p) => {"path":p,"git_blob":hashes[i]})
+  let versions = scrub_versions(command("moon",["version","--all"]))
+  let node = command("node",["--version"]).trim().to_owned()
+  let logs = @fs.tmpdir(prefix="jieheng-benchmark-")
+  println("benchmark logs: \{logs}")
+  let targets = if args[1]=="all" {["wasm","wasm-gc","js","native"]} else {["wasm","wasm-gc","js"]}
+  let results : Array[Json] = []
+  for target in targets {
+    println("benchmark build: \{target} release")
+    let build = @shell.Cmd("moon",["build","cmd/benchmark","--target",target,"--release","--deny-warn"]).output()
+    @fs.write_file(logs + "/build-" + target + ".log",build.stdout()+build.stderr())
+    build.check()
+    let directory = root + "/_build/" + target + "/release/build/cosettese/jieheng/cmd/benchmark/"
+    let extension = if target=="js" {"js"} else if target=="native" {"exe"} else {"wasm"}
+    let proposed = directory + "benchmark." + extension
+    let artifact = if @fs.exists(proposed) {proposed} else if target=="native" && @fs.exists(directory+"benchmark") {directory+"benchmark"} else {fail("compiled artifact missing: \{proposed}; compiler layout may have changed")}
+    let runtime = if target=="js" {"node"} else if target=="native" {artifact} else {"moonrun"}
+    let parameters = (if target=="js" {["--enable-source-maps",artifact]} else if target=="native" {[]} else {[artifact,"--"]}) +
+      (if args[2]=="smoke" {["--smoke"]} else {[]})
+    let collect_memory = (system=="Linux" || system=="Darwin") && @fs.exists("/usr/bin/time")
+    let output = if collect_memory {
+      @shell.Cmd("/usr/bin/time",[(if system=="Darwin" {"-l"} else {"-v"}),runtime,..parameters],env={"LC_ALL":"C"}).output()
+    } else {@shell.Cmd(runtime,parameters).output()}
+    @fs.write_file(logs + "/runtime-" + target + ".json",output.stdout())
+    @fs.write_file(logs + "/resource-" + target + ".log",output.stderr())
+    output.check()
+    let report = @json.parse(output.stdout())
+    guard report is Object(fields) && fields.get("summaries") is Some(Array(summaries)) &&
+      fields.get("dimensions") is Some(Array(dimensions)) && summaries.length()==9 && dimensions.length()==9 else {fail("unexpected benchmark output")}
+    for i,summary in summaries {
+      guard summary is Object(stats) && stats.get("median") is Some(Number(median,..)) && median>0.0 &&
+        dimensions[i] is Object(dimension) && stats.get("name")==dimension.get("id") &&
+        stats.get("runs")==Some(Json::number(if args[2]=="smoke" {1.0} else {5.0})) else {fail("invalid timing summary or workload identity")}
+      println("benchmark \{target}: \{dimensions[i].stringify()} median_us=\{median}")
+    }
+    let rss = if collect_memory {Json::string(peak_rss(output.stderr(),system=="Darwin"))} else {Json::null()}
+    results.push({"target":target,"build_mode":"release","workload":report,
+      "runtime":if target=="native" {"native-executable"} else {runtime},
+      "peak_rss_bytes":rss,"memory_status":if collect_memory {"measured-whole-runtime-process"} else {"not-collected"},
+      "memory_scope":"runtime peak RSS includes setup, warmup and serialization; compilation excluded"})
+  }
+  let result : Json = {"schema":"jieheng.benchmark-run.v1","profile":args[2],"os":system,"architecture":arch,"cpu":cpu,
+    "toolchain":versions,"node":node,"git_head_context":head,"working_tree_clean":clean,
+    "source_hash_command":"git hash-object --no-filters","source_manifest":sources,"runs":results,
+    "timing_unit":"microseconds_per_operation","result":"completed"}
+  @fs.write_file(logs + "/result.json",result.stringify()+"\n")
+  println("BENCHMARK_RESULT " + result.stringify())
+  println("benchmark evidence: \{logs}/result.json")
+}
