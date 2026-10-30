@@ -1,5 +1,7 @@
 # Sources and licensing
 
+Catalog generation and its daily-selection, per-unit pricing, package-capacity, settlement and policy references were authored here without copying an external implementation or suite. Calendar fixtures explicitly encode Gregorian century/leap/year boundaries; all contracts, customers and usage are synthetic. These bounded oracles are testing evidence, not formal proofs or an assertion of novel algorithms.
+
 CI evidence upload uses actions/upload-artifact v4 (MIT, https://github.com/actions/upload-artifact) as an external action, without vendoring its implementation. Project-authored evidence-directory handling retains logs and JSON summaries while excluding cloned sources, build outputs and dependency workspaces from uploaded artifacts.
 
 The acceptance orchestrator and evidence index were authored for this project. It uses Git local clone/checkouts and existing MoonBit verification scripts; it does not copy a release framework, create synthetic commits, publish packages or assert organizer approval.

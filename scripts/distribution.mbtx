@@ -1,3 +1,4 @@
+///|
 import {
   "moonbitlang/async@0.22.5",
   "moonbitlang/async@0.22.5/shell",
@@ -5,27 +6,44 @@ import {
   "moonbitlang/core/env",
 }
 
-async fn run(program : String, arguments : Array[String], cwd : String, logs : String, label : String) -> String {
+///|
+async fn run(
+  program : String,
+  arguments : Array[String],
+  cwd : String,
+  logs : String,
+  label : String,
+) -> String {
   println("distribution: \{label}")
-  let result = @shell.Cmd(program,arguments,cwd~).output()
-  @fs.write_file(logs + "/" + label + ".log",result.stdout() + result.stderr())
-  if result.exit_code() != 0 { fail("\{label} failed: \{result.stderr()} \{result.stdout()}; logs: \{logs}") }
+  let result = @shell.Cmd(program, arguments, cwd~).output()
+  @fs.write_file(logs + "/" + label + ".log", result.stdout() + result.stderr())
+  if result.exit_code() != 0 {
+    fail(
+      "\{label} failed: \{result.stderr()} \{result.stdout()}; logs: \{logs}",
+    )
+  }
   result.stdout() + result.stderr()
 }
 
+///|
 async fn main {
   let args = @env.args()
-  if args.length() != 3 || (args[1] != "portable" && args[1] != "all") ||
+  if args.length() != 3 ||
+    (args[1] != "portable" && args[1] != "all") ||
     (args[2] != "archive" && args[2] != "registry") {
-    fail("usage: moon run scripts/distribution.mbtx portable|all archive|registry")
+    fail(
+      "usage: moon run scripts/distribution.mbtx portable|all archive|registry",
+    )
   }
-  let root_result = @shell.Cmd("git",["rev-parse","--show-toplevel"]).output()
+  let root_result = @shell.Cmd("git", ["rev-parse", "--show-toplevel"]).output()
   root_result.check()
   let root = root_result.stdout().trim().to_owned()
   let logs = match @env.get_env_var("JIEHENG_EVIDENCE_DIR") {
     Some(base) => {
       let path = base + "/distribution"
-      if @fs.exists(path) {fail("evidence directory already exists: \{path}")}
+      if @fs.exists(path) {
+        fail("evidence directory already exists: \{path}")
+      }
       @fs.mkdir(path, recursive=true)
       path
     }
@@ -36,30 +54,58 @@ async fn main {
   let consumer = work + "/consumer"
   @fs.mkdir(work)
   @fs.mkdir(consumer)
-  for file in ["moon.mod","moon.pkg","workflow_test.mbt"] {
-    @fs.write_file(consumer + "/" + file,@fs.read_file(root + "/integration/consumer/" + file))
+  for file in ["moon.mod", "moon.pkg", "workflow_test.mbt"] {
+    @fs.write_file(
+      consumer + "/" + file,
+      @fs.read_file(root + "/integration/consumer/" + file),
+    )
   }
   let mut archive_path : String? = None
   if args[2] == "archive" {
-    let listing = run("moon",["package","--list"],root,logs,"package")
+    let listing = run("moon", ["package", "--list"], root, logs, "package")
     for view in listing.split("\n") {
       let line = view.trim().to_owned()
-      if line.has_prefix("Package to ") { archive_path = Some(line[11:].to_owned()) }
+      if line.has_prefix("Package to ") {
+        archive_path = Some(line[11:].to_owned())
+      }
     }
-    guard archive_path is Some(archive) else { fail("moon package did not report its archive path") }
-    let archive = if archive.has_prefix("\\\\?\\") { archive[4:].to_owned() } else { archive }
+    guard archive_path is Some(archive) else {
+      fail("moon package did not report its archive path")
+    }
+    let archive = if archive.has_prefix("\\\\?\\") {
+      archive[4:].to_owned()
+    } else {
+      archive
+    }
     archive_path = Some(archive)
     let windows = @env.get_env_var("OS") == Some("Windows_NT")
-    let members_text = if windows { run("tar",["-tf",archive],root,logs,"members") }
-      else { run("unzip",["-Z1",archive],root,logs,"members") }
-    let members = members_text.replace_all(old="\\",new="/")
-    let paths = members.split("\n").map(p => p.trim().to_owned()).filter(p => !p.is_empty()).collect()
-    for required in ["moon.mod","moon.pkg","LICENSE","README.md","SOURCES.md","CHANGELOG.md","quickstart.mbt.md","pkg.generated.mbti","docs/api-policy.md"] {
-      if !paths.contains(required) { fail("archive is missing \{required}") }
+    let members_text = if windows {
+      run("tar", ["-tf", archive], root, logs, "members")
+    } else {
+      run("unzip", ["-Z1", archive], root, logs, "members")
+    }
+    let members = members_text.replace_all(old="\\", new="/")
+    let paths = members
+      .split("\n")
+      .map(p => p.trim().to_owned())
+      .filter(p => !p.is_empty())
+      .collect()
+    for
+      required in [
+        "moon.mod", "moon.pkg", "LICENSE", "README.md", "SOURCES.md", "CHANGELOG.md",
+        "quickstart.mbt.md", "pkg.generated.mbti", "docs/api-policy.md",
+      ] {
+      if !paths.contains(required) {
+        fail("archive is missing \{required}")
+      }
     }
     for p in paths {
-      if p == "moon.work" || p.has_prefix("integration/") || p.has_prefix("_build/") ||
-        p.has_prefix(".git/") || p.has_prefix(".moon/") || p.has_prefix(".mooncakes/") ||
+      if p == "moon.work" ||
+        p.has_prefix("integration/") ||
+        p.has_prefix("_build/") ||
+        p.has_prefix(".git/") ||
+        p.has_prefix(".moon/") ||
+        p.has_prefix(".mooncakes/") ||
         (p != "moon.mod" && p.has_suffix("/moon.mod")) {
         fail("development state or nested module leaked into archive: \{p}")
       }
@@ -67,26 +113,55 @@ async fn main {
     let library = work + "/library"
     @fs.mkdir(library)
     if windows {
-      ignore(run("tar",["-xf",archive,"-C",library],root,logs,"extract"))
+      ignore(run("tar", ["-xf", archive, "-C", library], root, logs, "extract"))
     } else {
-      ignore(run("unzip",["-q",archive,"-d",library],root,logs,"extract"))
+      ignore(
+        run("unzip", ["-q", archive, "-d", library], root, logs, "extract"),
+      )
     }
-    @fs.write_file(work + "/moon.work","members = [\"library\", \"consumer\"]\n")
+    @fs.write_file(
+      work + "/moon.work",
+      "members = [\"library\", \"consumer\"]\n",
+    )
   } else {
     // No moon.work and no local library: the dependency must come from registry.
-    ignore(run("moon",["update"],consumer,logs,"registry-index"))
+    ignore(run("moon", ["update"], consumer, logs, "registry-index"))
   }
   let cwd = if args[2] == "archive" { work } else { consumer }
-  let versions = run("moon",["version","--all"],cwd,logs,"toolchain")
-  ignore(run("moon",["check","--target","all","--deny-warn"],cwd,logs,"check"))
-  let targets = if args[1] == "all" {["wasm","wasm-gc","js","native"]} else {["wasm","wasm-gc","js"]}
+  let versions = run("moon", ["version", "--all"], cwd, logs, "toolchain")
+  ignore(
+    run("moon", ["check", "--target", "all", "--deny-warn"], cwd, logs, "check"),
+  )
+  let targets = if args[1] == "all" {
+    ["wasm", "wasm-gc", "js", "native"]
+  } else {
+    ["wasm", "wasm-gc", "js"]
+  }
   for target in targets {
-    let output = run("moon",["test","--package","cosettese/jieheng-consumer","--target",target,"--deny-warn"],cwd,logs,"consumer-" + target)
+    let output = run(
+      "moon",
+      [
+        "test", "--package", "cosettese/jieheng-consumer", "--target", target, "--deny-warn",
+      ],
+      cwd,
+      logs,
+      "consumer-" + target,
+    )
     println(output)
   }
-  let archive_json = match archive_path { Some(s) => Json::string(s); None => Json::null() }
-  let result : Json = {"schema":"jieheng.distribution.v1","mode":args[2],"profile":args[1],
-    "archive":archive_json,"targets":targets,"toolchain":versions,"result":"passed"}
-  @fs.write_file(logs + "/result.json",result.stringify() + "\n")
+  let archive_json = match archive_path {
+    Some(s) => Json::string(s)
+    None => Json::null()
+  }
+  let result : Json = {
+    "schema": "jieheng.distribution.v1",
+    "mode": args[2],
+    "profile": args[1],
+    "archive": archive_json,
+    "targets": targets,
+    "toolchain": versions,
+    "result": "passed",
+  }
+  @fs.write_file(logs + "/result.json", result.stringify() + "\n")
   println("distribution verified: \{args[2]}; evidence: \{logs}/result.json")
 }

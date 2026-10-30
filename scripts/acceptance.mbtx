@@ -1,3 +1,4 @@
+///|
 import {
   "moonbitlang/async@0.22.5",
   "moonbitlang/async@0.22.5/shell",
@@ -5,24 +6,41 @@ import {
   "moonbitlang/core/env",
 }
 
-async fn checked(program : String, args : Array[String], cwd : String, logs : String, label : String) -> String {
+///|
+async fn checked(
+  program : String,
+  args : Array[String],
+  cwd : String,
+  logs : String,
+  label : String,
+) -> String {
   let output = @shell.Cmd(program, args, cwd~).output()
   @fs.write_file(logs + "/" + label + ".log", output.stdout() + output.stderr())
-  if output.exit_code()!=0 {fail("\{label} failed; inspect \{logs}/\{label}.log")}
+  if output.exit_code() != 0 {
+    fail("\{label} failed; inspect \{logs}/\{label}.log")
+  }
   output.stdout().trim().to_owned()
 }
 
+///|
 async fn main {
   let args = @env.args()
-  if (args.length()!=2 && args.length()!=3) || (args[1]!="portable" && args[1]!="all") {
-    fail("usage: moon run scripts/acceptance.mbtx portable|all [COMMIT]; default HEAD; all actually runs Native")
+  if (args.length() != 2 && args.length() != 3) ||
+    (args[1] != "portable" && args[1] != "all") {
+    fail(
+      "usage: moon run scripts/acceptance.mbtx portable|all [COMMIT]; default HEAD; all actually runs Native",
+    )
   }
   let logs = match @env.get_env_var("JIEHENG_EVIDENCE_DIR") {
     Some(base) => {
       let path = base + "/acceptance"
-      if @fs.exists(path) {fail("evidence directory already exists; choose a fresh JIEHENG_EVIDENCE_DIR")}
+      if @fs.exists(path) {
+        fail(
+          "evidence directory already exists; choose a fresh JIEHENG_EVIDENCE_DIR",
+        )
+      }
       @fs.mkdir(path, recursive=true)
-      path
+      @fs.realpath(path)
     }
     None => @fs.tmpdir(prefix="jieheng-acceptance-")
   }
@@ -33,46 +51,123 @@ async fn main {
   let mut tree = "unresolved"
   let mut snapshot = "unprepared"
   try {
-    let root = checked("git",["rev-parse","--show-toplevel"],".",logs,"root")
-    let revision = if args.length()==3 {args[2]} else {"HEAD"}
-    commit = checked("git",["rev-parse","--verify","--end-of-options",revision+"^{commit}"],root,logs,"resolve-commit")
-    if (commit.length()!=40 && commit.length()!=64) || !commit.iter().all(c =>
-      (c>='0' && c<='9') || (c>='a' && c<='f')) {fail("unexpected commit object name")}
+    let root = checked(
+      "git",
+      ["rev-parse", "--show-toplevel"],
+      ".",
+      logs,
+      "root",
+    )
+    let revision = if args.length() == 3 { args[2] } else { "HEAD" }
+    commit = checked(
+      "git",
+      ["rev-parse", "--verify", "--end-of-options", revision + "^{commit}"],
+      root,
+      logs,
+      "resolve-commit",
+    )
+    if (commit.length() != 40 && commit.length() != 64) ||
+      !commit.iter().all(c => (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')) {
+      fail("unexpected commit object name")
+    }
     snapshot = @fs.tmpdir(prefix="jieheng-acceptance-source-")
     // Keep real Git metadata for provenance, without creating synthetic commits
     // or importing uncommitted working files. No remote fetch is performed.
-    ignore(checked("git",["clone","--quiet","--no-hardlinks","--no-checkout",root,snapshot],root,logs,"clone"))
-    ignore(checked("git",["checkout","--detach",commit],snapshot,logs,"checkout"))
-    tree = checked("git",["rev-parse","HEAD^{tree}"],snapshot,logs,"source-tree")
+    ignore(
+      checked(
+        "git",
+        ["clone", "--quiet", "--no-hardlinks", "--no-checkout", root, snapshot],
+        root,
+        logs,
+        "clone",
+      ),
+    )
+    ignore(
+      checked(
+        "git",
+        ["checkout", "--detach", commit],
+        snapshot,
+        logs,
+        "checkout",
+      ),
+    )
+    tree = checked(
+      "git",
+      ["rev-parse", "HEAD^{tree}"],
+      snapshot,
+      logs,
+      "source-tree",
+    )
     let workflow = [
-      ("verify",["run","scripts/verify.mbtx",args[1],"HEAD"]),
-      ("distribution",["run","scripts/distribution.mbtx",args[1],"archive"]),
-      ("generative",["run","scripts/generative.mbtx",args[1]]),
-      ("benchmark",["run","scripts/benchmark.mbtx",args[1],"baseline"]),
+      ("verify", ["run", "scripts/verify.mbtx", args[1], "HEAD"]),
+      ("distribution", ["run", "scripts/distribution.mbtx", args[1], "archive"]),
+      ("generative", ["run", "scripts/generative.mbtx", args[1]]),
+      ("benchmark", ["run", "scripts/benchmark.mbtx", args[1], "baseline"]),
     ]
     for (label, command) in workflow {
       phase = label
       println("acceptance: \{label}; source \{commit}")
-      let output = @shell.Cmd("moon",command,cwd=snapshot,
-        env={"JIEHENG_EVIDENCE_DIR":logs+"/stages"}).output(max_output_bytes=8388608)
-      @fs.write_file(logs + "/" + label + ".log",output.stdout()+output.stderr())
-      steps.push({"stage":label,"arguments":command,"exit_code":output.exit_code(),"log":label+".log"})
-      if output.exit_code()!=0 {fail("\{label} failed; inspect \{logs}/\{label}.log")}
+      let output = @shell.Cmd("moon", command, cwd=snapshot, env={
+        "JIEHENG_EVIDENCE_DIR": logs + "/stages",
+      }).output(max_output_bytes=8388608)
+      @fs.write_file(
+        logs + "/" + label + ".log",
+        output.stdout() + output.stderr(),
+      )
+      steps.push({
+        "stage": label,
+        "arguments": command,
+        "exit_code": output.exit_code(),
+        "log": label + ".log",
+      })
+      if output.exit_code() != 0 {
+        fail("\{label} failed; inspect \{logs}/\{label}.log")
+      }
       println("acceptance passed: \{label}")
     }
-    let status = checked("git",["status","--porcelain"],snapshot,logs,"final-status")
-    if !status.is_empty() {fail("validation changed tracked or unignored source files; inspect final-status.log")}
+    let status = checked(
+      "git",
+      ["status", "--porcelain"],
+      snapshot,
+      logs,
+      "final-status",
+    )
+    if !status.is_empty() {
+      fail(
+        "validation changed tracked or unignored source files; inspect final-status.log",
+      )
+    }
   } catch {
     e => {
-      let failed : Json = {"schema":"jieheng.acceptance.v1","result":"failed","phase":phase,
-        "source_commit":commit,"source_tree":tree,"profile":args[1],"steps":steps,"diagnostic":"\{e}"}
-      @fs.write_file(logs + "/acceptance.json",failed.stringify()+"\n")
-      fail("acceptance failed during \{phase}: \{e}; evidence: \{logs}/acceptance.json")
+      let failed : Json = {
+        "schema": "jieheng.acceptance.v1",
+        "result": "failed",
+        "phase": phase,
+        "source_commit": commit,
+        "source_tree": tree,
+        "profile": args[1],
+        "steps": steps,
+        "diagnostic": "\{e}",
+      }
+      @fs.write_file(logs + "/acceptance.json", failed.stringify() + "\n")
+      fail(
+        "acceptance failed during \{phase}: \{e}; evidence: \{logs}/acceptance.json",
+      )
     }
   }
-  let result : Json = {"schema":"jieheng.acceptance.v1","result":"passed","source_commit":commit,
-    "source_tree":tree,"profile":args[1],"steps":steps,"source_unchanged":true,
-    "registry_publication":"not-attempted","scope":"technical verification; not an organizer acceptance decision"}
-  @fs.write_file(logs + "/acceptance.json",result.stringify()+"\n")
-  println("acceptance passed; source snapshot: \{snapshot}; evidence: \{logs}/acceptance.json")
+  let result : Json = {
+    "schema": "jieheng.acceptance.v1",
+    "result": "passed",
+    "source_commit": commit,
+    "source_tree": tree,
+    "profile": args[1],
+    "steps": steps,
+    "source_unchanged": true,
+    "registry_publication": "not-attempted",
+    "scope": "technical verification; not an organizer acceptance decision",
+  }
+  @fs.write_file(logs + "/acceptance.json", result.stringify() + "\n")
+  println(
+    "acceptance passed; source snapshot: \{snapshot}; evidence: \{logs}/acceptance.json",
+  )
 }

@@ -1,5 +1,7 @@
 # Reproducible runtime baseline
 
+When run through the unified acceptance entry, CI retains the benchmark JSON, resource logs and BENCHMARK_RESULT line inside the downloadable evidence artifact, rather than echoing every nested log to the Actions console. See [acceptance artifacts](acceptance.md).
+
 This harness measures existing public operations. It is not a claim of a speed advantage, an SLA, a production capacity estimate or a comparison with another library.
 
 ~~~text

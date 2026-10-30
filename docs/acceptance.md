@@ -35,7 +35,7 @@ acceptance.json 记录提交、Git 树、模式、各阶段命令和退出码。
 | 预算最大值、安全前缀配额 | quote_budget / quote_quota / quote_bill_quota | [预算](budget.md)、[配额](quota.md)、[整单配额](bill-quota.md) | 穷举小域、非单调整量价、首次失败凭证 |
 | 全整数域价格变化分析 | analyze_prices / verify_analysis | [分析](analysis.md)、examples/analysis | 分段与极值、边界前后值、独立参考 |
 | 生效日期目录与覆盖检查 | compile_catalog / rate_catalog / catalog_gaps | [目录](catalog.md)、[覆盖](coverage.md) | 日历边界、重叠/空窗、完整用量约束 |
-| 目录迁移与完整客户回放门禁 | audit_catalog_migration / replay_catalogs / check_replay_policy | [迁移](migration.md)、[回放](replay.md)、examples/replay | 报告核验、结构阻断、每客户绝对/相对涨幅、CLI 失败退出 |
+| 目录迁移与完整客户回放门禁 | audit_catalog_migration / replay_catalogs / check_replay_policy | [迁移](migration.md)、[回放](replay.md)、examples/replay | 逐日生成式参考、逐单位金额参考、结构阻断、绝对/相对阈值与零基线、CLI 失败退出 |
 | 可解释账单导出 | render_bill_markdown | [报告](report.md)、examples/report | 先核验后渲染、转义、附录、确定输出 |
 | 下游采用与交付 | root pkg.generated.mbti | [入门](../quickstart.mbt.md)、[API 策略](api-policy.md)、[发行包](distribution.md) | 独立模块消费、打包泄漏检查、文档测试 |
 | 组合正确性与性能边界 | cmd/generative / cmd/benchmark | [生成式](generative.md)、[基线](benchmarks.md) | 固定种子、跨后端摘要、九项工作负载和输入规模 |

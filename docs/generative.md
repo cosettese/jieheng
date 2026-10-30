@@ -25,3 +25,20 @@ Existing handwritten tests remain responsible for maximum tier counts, 30/60-dig
 The CLI accepts a UInt32 decimal seed, count 1..4096, and optional zero-based case index. Failure prints seed, case and phase plus a one-case replay command. All randomness is consumed while creating each case, so skipping earlier case execution preserves the selected input.
 
 The matrix saves raw logs and failure.json (seed, backend, argv, stdout/stderr, reference output, toolchain and Git head) before stopping. Success saves result.json and marks whether the working tree was clean. Temporary evidence is retained for diagnosis. Fingerprints identify generated traces; they are not signatures or performance scores.
+
+## Catalog migration and complete-bill replay
+
+~~~text
+moon run cmd/generative --target wasm -- catalog 1 32
+moon run cmd/generative --target wasm -- catalog 1 32 --case 31
+~~~
+
+The matrix command runs both pricing and catalog domains, each with three seeds and a standalone selected-case replay. Existing pricing output and golden fingerprints remain unchanged. Catalog output has schema jieheng.generated-catalog.v1 and its own generator stream; failure.json and log names identify the domain. The [acceptance artifacts](acceptance.md) retain the seed/revision, command, raw output and reference summary on CI.
+
+Each catalog case uses eight consecutive civil days from one of four explicit calendars: the 2000 leap-century boundary, the non-leap 1900 century, the 2024 leap day, or the 2024/2025 year boundary. Integer day-slot enumeration is the oracle; it does not call the producer's calendar-selection or sorted-boundary helpers. The migration pair contains one or two metrics, 1–3 day versions, optional gaps/open tails, metric addition/removal, currency/unit/identity/version changes, graduated/volume/package models, minimums and zero policies. Expected maximal spans and every ordered change class are built from daily selections, then compared with the whole report and checked for exactly one span per metric/day.
+
+A separate complete pair has two metrics and four customer-period snapshots at day slots 0/2/4/7. Quantities include zero and generated values 0..20; tier bounds and package sizes are 1..5, prices and minimums 0..99 thousandths, with five settlement precisions and all four rounding modes. The reference enumerates individual units or repeatedly adds package capacity, applies minimums and independently settles each item. It checks every row, exact/settled aggregates, signed deltas, increase/decrease counts and the first largest increase. It does not use rate, rate_bill or the replay producer as its expected-value calculator.
+
+Policy checks use independently derived settled units and integer cross-products for percentages 0/0.1/1/12.5/50/100/1000 and absolute caps 0/100. The exact observed maximum is accepted as an absolute limit; one minor unit below it is rejected when positive. Dedicated tests exercise exact 12.5% equality, a 12.499% failure and a positive change from a zero baseline. Other tests deliberately corrupt reports to establish that the references detect errors without invoking the library verifier.
+
+Generated cases also check catalog/migration/replay round trips, deterministic recovery, invalid-century dates, overlapping/duplicate timelines, incomplete bills, duplicate customers, malformed spans, forged summaries, duplicate JSON keys and unknown data. These bounded checks complement the full numeric/calendar/resource-limit tests; they do not exhaust all dates, metric counts or contracts. All random draws occur before execution, preserving single-case replay independently of earlier successful cases.

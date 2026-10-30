@@ -1,3 +1,4 @@
+///|
 import {
   "moonbitlang/async@0.22.5",
   "moonbitlang/async@0.22.5/shell",
@@ -5,13 +6,26 @@ import {
   "moonbitlang/core/env",
 }
 
+///|
 async fn main {
   let args = @env.args()
   let target = if args.length() == 2 { args[1] } else { "wasm" }
-  for (fixture, expected) in [("stripe", "USD 127.50"), ("s3", "USD 1371.20"), ("stripe-volume", "USD 120.00")] {
+  for
+    (fixture, expected) in [
+      ("stripe", "USD 127.50"),
+      ("s3", "USD 1371.20"),
+      ("stripe-volume", "USD 120.00"),
+    ] {
     let output = @shell.Cmd("moon", [
-      "run", "cmd/rate", "--target", target, "--",
-      "examples/\{fixture}/plan.json", "examples/\{fixture}/usage.json", "2", "half-even",
+      "run",
+      "cmd/rate",
+      "--target",
+      target,
+      "--",
+      "examples/\{fixture}/plan.json",
+      "examples/\{fixture}/usage.json",
+      "2",
+      "half-even",
     ]).output()
     if output.exit_code() != 0 {
       fail("\{fixture} CLI failed: \{output.stderr()} \{output.stdout()}")
@@ -19,325 +33,901 @@ async fn main {
     if !output.stdout().contains("settled: \{expected} (delta 0)") {
       fail("unexpected \{fixture} result: \{output.stdout()}")
     }
-    let report = @shell.Cmd("moon", ["run", "cmd/rate", "--target", target, "--",
-      "examples/\{fixture}/plan.json", "examples/\{fixture}/usage.json", "2", "half-even", "--json"]).output()
-    if report.exit_code() != 0 { fail("JSON CLI failed: \{report.stderr()}") }
+    let report = @shell.Cmd("moon", [
+      "run",
+      "cmd/rate",
+      "--target",
+      target,
+      "--",
+      "examples/\{fixture}/plan.json",
+      "examples/\{fixture}/usage.json",
+      "2",
+      "half-even",
+      "--json",
+    ]).output()
+    if report.exit_code() != 0 {
+      fail("JSON CLI failed: \{report.stderr()}")
+    }
     let golden = @fs.read_file("examples/\{fixture}/evidence.json").text()
     if report.stdout().trim() != golden.trim() {
-      fail("\{fixture} evidence differs from the checked-in canonical record on \{target}")
+      fail(
+        "\{fixture} evidence differs from the checked-in canonical record on \{target}",
+      )
     }
-    let checked = @shell.Cmd("moon", ["run", "cmd/verify", "--target", target, "--",
-      "examples/\{fixture}/plan.json", "examples/\{fixture}/usage.json",
-      "examples/\{fixture}/evidence.json", "2", "half-even"]).output()
+    let checked = @shell.Cmd("moon", [
+      "run",
+      "cmd/verify",
+      "--target",
+      target,
+      "--",
+      "examples/\{fixture}/plan.json",
+      "examples/\{fixture}/usage.json",
+      "examples/\{fixture}/evidence.json",
+      "2",
+      "half-even",
+    ]).output()
     if checked.exit_code() != 0 || checked.stdout() != "verified: \{expected}\n" {
       fail("verification failed: \{checked.stderr()} \{checked.stdout()}")
     }
   }
-  let failed = @shell.Cmd("moon", ["run", "cmd/rate", "--target", target, "--",
-    "examples/stripe/plan.json", "examples/s3/usage.json", "2", "half-even"]).output()
-  if failed.exit_code() == 0 || failed.stdout() != "" || !failed.stderr().contains("metric") {
+  let failed = @shell.Cmd("moon", [
+    "run", "cmd/rate", "--target", target, "--", "examples/stripe/plan.json", "examples/s3/usage.json",
+    "2", "half-even",
+  ]).output()
+  if failed.exit_code() == 0 ||
+    failed.stdout() != "" ||
+    !failed.stderr().contains("metric") {
     fail("mismatched metric must fail without stdout")
   }
-  let recovery = @shell.Cmd("moon", ["run", "cmd/rate", "--target", target, "--",
-    "examples/stripe/plan.json", "examples/stripe/usage.json", "2", "half-even"]).output()
+  let recovery = @shell.Cmd("moon", [
+    "run", "cmd/rate", "--target", target, "--", "examples/stripe/plan.json", "examples/stripe/usage.json",
+    "2", "half-even",
+  ]).output()
   recovery.check()
-  if !recovery.stdout().contains("USD 127.50") { fail("recovery failed") }
+  if !recovery.stdout().contains("USD 127.50") {
+    fail("recovery failed")
+  }
   let dir = @fs.tmpdir(prefix="jieheng-e2e-")
   let tampered_path = dir + "/tampered.json"
   defer {
-    if @fs.exists(tampered_path) { @fs.remove(tampered_path) }
+    if @fs.exists(tampered_path) {
+      @fs.remove(tampered_path)
+    }
     @fs.rmdir(dir)
   }
   let golden = @fs.read_file("examples/s3/evidence.json").text()
-  let tampered = golden.replace(old="\"total\":\"1371.2\"", new="\"total\":\"0\"")
-  if tampered == golden { fail("tamper fixture did not change") }
+  let tampered = golden.replace(
+    old="\"total\":\"1371.2\"",
+    new="\"total\":\"0\"",
+  )
+  if tampered == golden {
+    fail("tamper fixture did not change")
+  }
   @fs.write_file(tampered_path, tampered)
-  let refused = @shell.Cmd("moon", ["run", "cmd/verify", "--target", target, "--",
-    "examples/s3/plan.json", "examples/s3/usage.json", tampered_path, "2", "half-even"]).output()
-  if refused.exit_code() == 0 || refused.stdout() != "" || !refused.stderr().contains("total") {
+  let refused = @shell.Cmd("moon", [
+    "run", "cmd/verify", "--target", target, "--", "examples/s3/plan.json", "examples/s3/usage.json",
+    tampered_path, "2", "half-even",
+  ]).output()
+  if refused.exit_code() == 0 ||
+    refused.stdout() != "" ||
+    !refused.stderr().contains("total") {
     fail("tampered evidence must fail with a total diagnostic and no stdout")
   }
-  let wrong_policy = @shell.Cmd("moon", ["run", "cmd/verify", "--target", target, "--",
-    "examples/s3/plan.json", "examples/s3/usage.json", "examples/s3/evidence.json", "2", "half-up"]).output()
+  let wrong_policy = @shell.Cmd("moon", [
+    "run", "cmd/verify", "--target", target, "--", "examples/s3/plan.json", "examples/s3/usage.json",
+    "examples/s3/evidence.json", "2", "half-up",
+  ]).output()
   if wrong_policy.exit_code() == 0 || !wrong_policy.stderr().contains("policy") {
     fail("an untrusted rounding policy must fail")
   }
-  let compared = @shell.Cmd("moon", ["run", "cmd/compare", "--target", target, "--",
-    "examples/stripe/plan.json", "examples/stripe-volume/plan.json", "examples/stripe/usage.json", "2", "half-even"]).output()
-  if compared.exit_code() != 0 || !compared.stdout().contains("exact delta: -7.5\nsettled delta: -7.5\n") {
-    fail("comparison workflow failed: \{compared.stderr()} \{compared.stdout()}")
+  let compared = @shell.Cmd("moon", [
+    "run", "cmd/compare", "--target", target, "--", "examples/stripe/plan.json",
+    "examples/stripe-volume/plan.json", "examples/stripe/usage.json", "2", "half-even",
+  ]).output()
+  if compared.exit_code() != 0 ||
+    !compared.stdout().contains("exact delta: -7.5\nsettled delta: -7.5\n") {
+    fail(
+      "comparison workflow failed: \{compared.stderr()} \{compared.stdout()}",
+    )
   }
-  let compared_json = @shell.Cmd("moon", ["run", "cmd/compare", "--target", target, "--",
-    "examples/stripe/plan.json", "examples/stripe-volume/plan.json", "examples/stripe/usage.json", "2", "half-even", "--json"]).output()
-  let expected_comparison = @fs.read_file("examples/stripe-volume/comparison.json").text()
-  if compared_json.exit_code() != 0 || compared_json.stdout().trim() != expected_comparison.trim() {
+  let compared_json = @shell.Cmd("moon", [
+    "run", "cmd/compare", "--target", target, "--", "examples/stripe/plan.json",
+    "examples/stripe-volume/plan.json", "examples/stripe/usage.json", "2", "half-even",
+    "--json",
+  ]).output()
+  let expected_comparison = @fs.read_file(
+    "examples/stripe-volume/comparison.json",
+  ).text()
+  if compared_json.exit_code() != 0 ||
+    compared_json.stdout().trim() != expected_comparison.trim() {
     fail("canonical comparison differs on \{target}: \{compared_json.stderr()}")
   }
-  let verified_comparison = @shell.Cmd("moon", ["run", "cmd/compare", "--target", target, "--",
-    "examples/stripe/plan.json", "examples/stripe-volume/plan.json", "examples/stripe/usage.json", "2", "half-even",
-    "--verify", "examples/stripe-volume/comparison.json"]).output()
-  if verified_comparison.exit_code() != 0 || verified_comparison.stdout() != "verified comparison: exact delta -7.5; settled delta -7.5\n" {
+  let verified_comparison = @shell.Cmd("moon", [
+    "run", "cmd/compare", "--target", target, "--", "examples/stripe/plan.json",
+    "examples/stripe-volume/plan.json", "examples/stripe/usage.json", "2", "half-even",
+    "--verify", "examples/stripe-volume/comparison.json",
+  ]).output()
+  if verified_comparison.exit_code() != 0 ||
+    verified_comparison.stdout() !=
+    "verified comparison: exact delta -7.5; settled delta -7.5\n" {
     fail("comparison verification failed: \{verified_comparison.stderr()}")
   }
-  let forged_comparison = expected_comparison.replace(old="\"settled_delta\":\"-7.5\"", new="\"settled_delta\":\"0\"")
-  if forged_comparison == expected_comparison { fail("comparison tamper did not change the fixture") }
+  let forged_comparison = expected_comparison.replace(
+    old="\"settled_delta\":\"-7.5\"",
+    new="\"settled_delta\":\"0\"",
+  )
+  if forged_comparison == expected_comparison {
+    fail("comparison tamper did not change the fixture")
+  }
   @fs.write_file(tampered_path, forged_comparison)
-  let refused_comparison = @shell.Cmd("moon", ["run", "cmd/compare", "--target", target, "--",
-    "examples/stripe/plan.json", "examples/stripe-volume/plan.json", "examples/stripe/usage.json", "2", "half-even",
-    "--verify", tampered_path]).output()
-  if refused_comparison.exit_code() == 0 || refused_comparison.stdout() != "" || !refused_comparison.stderr().contains("comparison.settled_delta") {
+  let refused_comparison = @shell.Cmd("moon", [
+    "run", "cmd/compare", "--target", target, "--", "examples/stripe/plan.json",
+    "examples/stripe-volume/plan.json", "examples/stripe/usage.json", "2", "half-even",
+    "--verify", tampered_path,
+  ]).output()
+  if refused_comparison.exit_code() == 0 ||
+    refused_comparison.stdout() != "" ||
+    !refused_comparison.stderr().contains("comparison.settled_delta") {
     fail("tampered comparison must be refused without stdout")
   }
-  let incompatible = @shell.Cmd("moon", ["run", "cmd/compare", "--target", target, "--",
-    "examples/stripe/plan.json", "examples/s3/plan.json", "examples/stripe/usage.json", "2", "half-even"]).output()
-  if incompatible.exit_code() == 0 || incompatible.stdout() != "" || !incompatible.stderr().contains("comparison") {
+  let incompatible = @shell.Cmd("moon", [
+    "run", "cmd/compare", "--target", target, "--", "examples/stripe/plan.json",
+    "examples/s3/plan.json", "examples/stripe/usage.json", "2", "half-even",
+  ]).output()
+  if incompatible.exit_code() == 0 ||
+    incompatible.stdout() != "" ||
+    !incompatible.stderr().contains("comparison") {
     fail("incompatible comparison units must be refused")
   }
-  let comparison_recovery = @shell.Cmd("moon", ["run", "cmd/compare", "--target", target, "--",
-    "examples/stripe/plan.json", "examples/stripe-volume/plan.json", "examples/stripe/usage.json", "2", "half-even"]).output()
-  if comparison_recovery.exit_code() != 0 || comparison_recovery.stdout() != compared.stdout() {
+  let comparison_recovery = @shell.Cmd("moon", [
+    "run", "cmd/compare", "--target", target, "--", "examples/stripe/plan.json",
+    "examples/stripe-volume/plan.json", "examples/stripe/usage.json", "2", "half-even",
+  ]).output()
+  if comparison_recovery.exit_code() != 0 ||
+    comparison_recovery.stdout() != compared.stdout() {
     fail("comparison must recover after invalid input")
   }
-  let cohort_args = ["run", "cmd/cohort", "--target", target, "--", "examples/stripe/plan.json", "examples/stripe-volume/plan.json", "examples/cohort/usages.json", "2", "half-even"]
+  let cohort_args = [
+    "run", "cmd/cohort", "--target", target, "--", "examples/stripe/plan.json", "examples/stripe-volume/plan.json",
+    "examples/cohort/usages.json", "2", "half-even",
+  ]
   let cohort = @shell.Cmd("moon", cohort_args + ["--json"]).output()
   let cohort_golden = @fs.read_file("examples/cohort/report.json").text()
   if cohort.exit_code() != 0 || cohort.stdout().trim() != cohort_golden.trim() {
     fail("cohort golden mismatch: \{cohort.stderr()}")
   }
-  let cohort_verified = @shell.Cmd("moon", cohort_args + ["--verify", "examples/cohort/report.json"]).output()
-  if cohort_verified.exit_code() != 0 || cohort_verified.stdout() != "verified cohort: 3 snapshots; settled delta -17.5\n" {
+  let cohort_verified = @shell.Cmd(
+    "moon",
+    cohort_args + ["--verify", "examples/cohort/report.json"],
+  ).output()
+  if cohort_verified.exit_code() != 0 ||
+    cohort_verified.stdout() !=
+    "verified cohort: 3 snapshots; settled delta -17.5\n" {
     fail("cohort verification failed: \{cohort_verified.stderr()}")
   }
-  let cohort_tampered = cohort_golden.replace(old="\"settled_delta\":\"-17.5\"", new="\"settled_delta\":\"0\"")
-  if cohort_tampered == cohort_golden { fail("cohort tampering did not change fixture") }
+  let cohort_tampered = cohort_golden.replace(
+    old="\"settled_delta\":\"-17.5\"",
+    new="\"settled_delta\":\"0\"",
+  )
+  if cohort_tampered == cohort_golden {
+    fail("cohort tampering did not change fixture")
+  }
   @fs.write_file(tampered_path, cohort_tampered)
   let cohort_bad = @shell.Cmd("moon", cohort_args + ["--verify", tampered_path]).output()
-  if cohort_bad.exit_code() == 0 || cohort_bad.stdout() != "" || !cohort_bad.stderr().contains("cohort.totals") {
+  if cohort_bad.exit_code() == 0 ||
+    cohort_bad.stdout() != "" ||
+    !cohort_bad.stderr().contains("cohort.totals") {
     fail("cohort tampering must be refused")
   }
   let cohort_recovery = @shell.Cmd("moon", cohort_args + ["--json"]).output()
-  if cohort_recovery.exit_code() != 0 || cohort_recovery.stdout() != cohort.stdout() { fail("cohort recovery failed") }
-  let charge_args = ["run", "cmd/charge", "--target", target, "--", "examples/s3/plan.json", "examples/s3/usage.json", "1500", "charge", "2", "half-even"]
+  if cohort_recovery.exit_code() != 0 ||
+    cohort_recovery.stdout() != cohort.stdout() {
+    fail("cohort recovery failed")
+  }
+  let charge_args = [
+    "run", "cmd/charge", "--target", target, "--", "examples/s3/plan.json", "examples/s3/usage.json",
+    "1500", "charge", "2", "half-even",
+  ]
   let charge = @shell.Cmd("moon", charge_args + ["--json"]).output()
   let charge_golden = @fs.read_file("examples/minimum/charge.json").text()
-  if charge.exit_code() != 0 || charge.stdout().trim() != charge_golden.trim() { fail("minimum charge golden mismatch: \{charge.stderr()}") }
-  let charge_verified = @shell.Cmd("moon", charge_args + ["--verify", "examples/minimum/charge.json"]).output()
-  if charge_verified.exit_code() != 0 || charge_verified.stdout() != "verified charge: USD 1500.00\n" { fail("minimum charge verification failed") }
-  let charge_tampered = charge_golden.replace(old="\"top_up\":\"128.8\"", new="\"top_up\":\"0\"")
-  if charge_tampered == charge_golden { fail("charge tampering did not change fixture") }
+  if charge.exit_code() != 0 || charge.stdout().trim() != charge_golden.trim() {
+    fail("minimum charge golden mismatch: \{charge.stderr()}")
+  }
+  let charge_verified = @shell.Cmd(
+    "moon",
+    charge_args + ["--verify", "examples/minimum/charge.json"],
+  ).output()
+  if charge_verified.exit_code() != 0 ||
+    charge_verified.stdout() != "verified charge: USD 1500.00\n" {
+    fail("minimum charge verification failed")
+  }
+  let charge_tampered = charge_golden.replace(
+    old="\"top_up\":\"128.8\"",
+    new="\"top_up\":\"0\"",
+  )
+  if charge_tampered == charge_golden {
+    fail("charge tampering did not change fixture")
+  }
   @fs.write_file(tampered_path, charge_tampered)
   let charge_bad = @shell.Cmd("moon", charge_args + ["--verify", tampered_path]).output()
-  if charge_bad.exit_code() == 0 || charge_bad.stdout() != "" || !charge_bad.stderr().contains("charge.total") { fail("minimum top-up tampering must be refused") }
-  let wrong_minimum = @shell.Cmd("moon", ["run", "cmd/charge", "--target", target, "--", "examples/s3/plan.json", "examples/s3/usage.json", "1501", "charge", "2", "half-even", "--verify", "examples/minimum/charge.json"]).output()
-  if wrong_minimum.exit_code() == 0 || wrong_minimum.stdout() != "" || !wrong_minimum.stderr().contains("policy") { fail("minimum policy substitution must fail") }
+  if charge_bad.exit_code() == 0 ||
+    charge_bad.stdout() != "" ||
+    !charge_bad.stderr().contains("charge.total") {
+    fail("minimum top-up tampering must be refused")
+  }
+  let wrong_minimum = @shell.Cmd("moon", [
+    "run", "cmd/charge", "--target", target, "--", "examples/s3/plan.json", "examples/s3/usage.json",
+    "1501", "charge", "2", "half-even", "--verify", "examples/minimum/charge.json",
+  ]).output()
+  if wrong_minimum.exit_code() == 0 ||
+    wrong_minimum.stdout() != "" ||
+    !wrong_minimum.stderr().contains("policy") {
+    fail("minimum policy substitution must fail")
+  }
   let charge_recovery = @shell.Cmd("moon", charge_args + ["--json"]).output()
-  if charge_recovery.exit_code() != 0 || charge_recovery.stdout() != charge.stdout() { fail("minimum charge recovery failed") }
-  let invoice_args = ["run", "cmd/invoice", "--target", target, "--", "examples/invoice/input.json", "2", "half-even"]
+  if charge_recovery.exit_code() != 0 ||
+    charge_recovery.stdout() != charge.stdout() {
+    fail("minimum charge recovery failed")
+  }
+  let invoice_args = [
+    "run", "cmd/invoice", "--target", target, "--", "examples/invoice/input.json",
+    "2", "half-even",
+  ]
   let invoice = @shell.Cmd("moon", invoice_args + ["--json"]).output()
   let invoice_golden = @fs.read_file("examples/invoice/invoice.json").text()
-  if invoice.exit_code() != 0 || invoice.stdout().trim() != invoice_golden.trim() { fail("invoice golden mismatch: \{invoice.stderr()}") }
+  if invoice.exit_code() != 0 ||
+    invoice.stdout().trim() != invoice_golden.trim() {
+    fail("invoice golden mismatch: \{invoice.stderr()}")
+  }
   let invoice_plain = @shell.Cmd("moon", invoice_args).output()
-  if invoice_plain.exit_code() != 0 || !invoice_plain.stdout().contains("settled: USD 1627.50 (rounding delta 0)") { fail("invoice plain output failed") }
-  let invoice_verified = @shell.Cmd("moon", invoice_args + ["--verify", "examples/invoice/invoice.json"]).output()
-  if invoice_verified.exit_code() != 0 || invoice_verified.stdout() != "verified invoice: USD 1627.50\n" { fail("invoice verification failed") }
-  let invoice_tampered = invoice_golden.replace(old="\"amount\":\"1627.50\"", new="\"amount\":\"1627.51\"")
-  if invoice_tampered == invoice_golden { fail("invoice tampering did not change fixture") }
+  if invoice_plain.exit_code() != 0 ||
+    !invoice_plain.stdout().contains("settled: USD 1627.50 (rounding delta 0)") {
+    fail("invoice plain output failed")
+  }
+  let invoice_verified = @shell.Cmd(
+    "moon",
+    invoice_args + ["--verify", "examples/invoice/invoice.json"],
+  ).output()
+  if invoice_verified.exit_code() != 0 ||
+    invoice_verified.stdout() != "verified invoice: USD 1627.50\n" {
+    fail("invoice verification failed")
+  }
+  let invoice_tampered = invoice_golden.replace(
+    old="\"amount\":\"1627.50\"",
+    new="\"amount\":\"1627.51\"",
+  )
+  if invoice_tampered == invoice_golden {
+    fail("invoice tampering did not change fixture")
+  }
   @fs.write_file(tampered_path, invoice_tampered)
-  let invoice_bad = @shell.Cmd("moon", invoice_args + ["--verify", tampered_path]).output()
-  if invoice_bad.exit_code() == 0 || invoice_bad.stdout() != "" || !invoice_bad.stderr().contains("invoice.totals") { fail("invoice tampering must be refused") }
+  let invoice_bad = @shell.Cmd(
+    "moon",
+    invoice_args + ["--verify", tampered_path],
+  ).output()
+  if invoice_bad.exit_code() == 0 ||
+    invoice_bad.stdout() != "" ||
+    !invoice_bad.stderr().contains("invoice.totals") {
+    fail("invoice tampering must be refused")
+  }
   let invoice_input = @fs.read_file("examples/invoice/input.json").text()
-  let mixed_customer = invoice_input.replace(old="\"quantity\":\"60000\"", new="\"quantity\":\"60000\",\"tax\":\"1\"")
-  if mixed_customer == invoice_input { fail("invoice unsupported field insertion failed") }
+  let mixed_customer = invoice_input.replace(
+    old="\"quantity\":\"60000\"",
+    new="\"quantity\":\"60000\",\"tax\":\"1\"",
+  )
+  if mixed_customer == invoice_input {
+    fail("invoice unsupported field insertion failed")
+  }
   @fs.write_file(tampered_path, mixed_customer)
-  let unsupported = @shell.Cmd("moon", ["run", "cmd/invoice", "--target", target, "--", tampered_path, "2", "half-even"]).output()
-  if unsupported.exit_code() == 0 || unsupported.stdout() != "" || !unsupported.stderr().contains("tax") { fail("invoice unsupported nested fields must fail") }
+  let unsupported = @shell.Cmd("moon", [
+    "run", "cmd/invoice", "--target", target, "--", tampered_path, "2", "half-even",
+  ]).output()
+  if unsupported.exit_code() == 0 ||
+    unsupported.stdout() != "" ||
+    !unsupported.stderr().contains("tax") {
+    fail("invoice unsupported nested fields must fail")
+  }
   let invoice_recovery = @shell.Cmd("moon", invoice_args + ["--json"]).output()
-  if invoice_recovery.exit_code() != 0 || invoice_recovery.stdout() != invoice.stdout() { fail("invoice recovery failed") }
-  let schedule_args = ["run", "cmd/schedule", "--target", target, "--", "examples/schedule/schedule.json", "2026-10-22", "examples/s3/usage.json", "2", "half-even"]
+  if invoice_recovery.exit_code() != 0 ||
+    invoice_recovery.stdout() != invoice.stdout() {
+    fail("invoice recovery failed")
+  }
+  let schedule_args = [
+    "run", "cmd/schedule", "--target", target, "--", "examples/schedule/schedule.json",
+    "2026-10-22", "examples/s3/usage.json", "2", "half-even",
+  ]
   let scheduled = @shell.Cmd("moon", schedule_args + ["--json"]).output()
   let scheduled_golden = @fs.read_file("examples/schedule/evidence.json").text()
-  if scheduled.exit_code() != 0 || scheduled.stdout().trim() != scheduled_golden.trim() { fail("scheduled evidence mismatch: \{scheduled.stderr()}") }
-  let scheduled_verified = @shell.Cmd("moon", schedule_args + ["--verify", "examples/schedule/evidence.json"]).output()
-  if scheduled_verified.exit_code() != 0 || scheduled_verified.stdout() != "verified scheduled: USD 1371.20\n" { fail("scheduled verification failed") }
-  let uncovered = @shell.Cmd("moon", ["run", "cmd/schedule", "--target", target, "--", "examples/schedule/schedule.json", "2026-09-30", "examples/s3/usage.json", "2", "half-even"]).output()
-  if uncovered.exit_code() == 0 || uncovered.stdout() != "" || !uncovered.stderr().contains("uncovered") { fail("uncovered dates must fail") }
-  @fs.write_file(tampered_path, scheduled_golden.replace(old="\"on\":\"2026-10-22\"", new="\"on\":\"2026-10-23\""))
-  let wrong_date = @shell.Cmd("moon", schedule_args + ["--verify", tampered_path]).output()
-  if wrong_date.exit_code() == 0 || wrong_date.stdout() != "" || !wrong_date.stderr().contains("scheduled.on") { fail("date substitution must fail") }
+  if scheduled.exit_code() != 0 ||
+    scheduled.stdout().trim() != scheduled_golden.trim() {
+    fail("scheduled evidence mismatch: \{scheduled.stderr()}")
+  }
+  let scheduled_verified = @shell.Cmd(
+    "moon",
+    schedule_args + ["--verify", "examples/schedule/evidence.json"],
+  ).output()
+  if scheduled_verified.exit_code() != 0 ||
+    scheduled_verified.stdout() != "verified scheduled: USD 1371.20\n" {
+    fail("scheduled verification failed")
+  }
+  let uncovered = @shell.Cmd("moon", [
+    "run", "cmd/schedule", "--target", target, "--", "examples/schedule/schedule.json",
+    "2026-09-30", "examples/s3/usage.json", "2", "half-even",
+  ]).output()
+  if uncovered.exit_code() == 0 ||
+    uncovered.stdout() != "" ||
+    !uncovered.stderr().contains("uncovered") {
+    fail("uncovered dates must fail")
+  }
+  @fs.write_file(
+    tampered_path,
+    scheduled_golden.replace(
+      old="\"on\":\"2026-10-22\"",
+      new="\"on\":\"2026-10-23\"",
+    ),
+  )
+  let wrong_date = @shell.Cmd(
+    "moon",
+    schedule_args + ["--verify", tampered_path],
+  ).output()
+  if wrong_date.exit_code() == 0 ||
+    wrong_date.stdout() != "" ||
+    !wrong_date.stderr().contains("scheduled.on") {
+    fail("date substitution must fail")
+  }
   let scheduled_recovery = @shell.Cmd("moon", schedule_args + ["--json"]).output()
-  if scheduled_recovery.exit_code() != 0 || scheduled_recovery.stdout() != scheduled.stdout() { fail("schedule recovery failed") }
-  let package_args = ["run", "cmd/packages", "--target", target, "--", "examples/packages/plan.json", "examples/packages/usage.json", "2", "half-even"]
+  if scheduled_recovery.exit_code() != 0 ||
+    scheduled_recovery.stdout() != scheduled.stdout() {
+    fail("schedule recovery failed")
+  }
+  let package_args = [
+    "run", "cmd/packages", "--target", target, "--", "examples/packages/plan.json",
+    "examples/packages/usage.json", "2", "half-even",
+  ]
   let packages = @shell.Cmd("moon", package_args + ["--json"]).output()
   let packages_golden = @fs.read_file("examples/packages/evidence.json").text()
-  if packages.exit_code() != 0 || packages.stdout().trim() != packages_golden.trim() { fail("package evidence mismatch: \{packages.stderr()}") }
-  let packages_verified = @shell.Cmd("moon", package_args + ["--verify", "examples/packages/evidence.json"]).output()
-  if packages_verified.exit_code() != 0 || packages_verified.stdout() != "verified packages: USD 2.55\n" { fail("package verification failed") }
-  let changed_capacity = packages_golden.replace(old="\"unused_units\":\"499\"", new="\"unused_units\":\"500\"")
-  if changed_capacity == packages_golden { fail("package capacity fixture did not change") }
+  if packages.exit_code() != 0 ||
+    packages.stdout().trim() != packages_golden.trim() {
+    fail("package evidence mismatch: \{packages.stderr()}")
+  }
+  let packages_verified = @shell.Cmd(
+    "moon",
+    package_args + ["--verify", "examples/packages/evidence.json"],
+  ).output()
+  if packages_verified.exit_code() != 0 ||
+    packages_verified.stdout() != "verified packages: USD 2.55\n" {
+    fail("package verification failed")
+  }
+  let changed_capacity = packages_golden.replace(
+    old="\"unused_units\":\"499\"",
+    new="\"unused_units\":\"500\"",
+  )
+  if changed_capacity == packages_golden {
+    fail("package capacity fixture did not change")
+  }
   @fs.write_file(tampered_path, changed_capacity)
-  let packages_bad = @shell.Cmd("moon", package_args + ["--verify", tampered_path]).output()
-  if packages_bad.exit_code() == 0 || packages_bad.stdout() != "" || !packages_bad.stderr().contains("capacity") { fail("package capacity forgery must fail") }
+  let packages_bad = @shell.Cmd(
+    "moon",
+    package_args + ["--verify", tampered_path],
+  ).output()
+  if packages_bad.exit_code() == 0 ||
+    packages_bad.stdout() != "" ||
+    !packages_bad.stderr().contains("capacity") {
+    fail("package capacity forgery must fail")
+  }
   let packages_recovery = @shell.Cmd("moon", package_args + ["--json"]).output()
-  if packages_recovery.exit_code() != 0 || packages_recovery.stdout() != packages.stdout() { fail("package recovery failed") }
-  let budget_args = ["run", "cmd/budget", "--target", target, "--", "examples/s3/plan.json", "examples/budget/request.json", "2", "half-even"]
+  if packages_recovery.exit_code() != 0 ||
+    packages_recovery.stdout() != packages.stdout() {
+    fail("package recovery failed")
+  }
+  let budget_args = [
+    "run", "cmd/budget", "--target", target, "--", "examples/s3/plan.json", "examples/budget/request.json",
+    "2", "half-even",
+  ]
   let budget = @shell.Cmd("moon", budget_args + ["--json"]).output()
   let budget_golden = @fs.read_file("examples/budget/quote.json").text()
-  if budget.exit_code() != 0 || budget.stdout().trim() != budget_golden.trim() { fail("budget quote mismatch: \{budget.stderr()}") }
+  if budget.exit_code() != 0 || budget.stdout().trim() != budget_golden.trim() {
+    fail("budget quote mismatch: \{budget.stderr()}")
+  }
   let budget_plain = @shell.Cmd("moon", budget_args).output()
-  if budget_plain.exit_code() != 0 || !budget_plain.stdout().contains("maximum quantity: 65854\n") || !budget_plain.stdout().contains("settled: USD 1499.99") { fail("budget plain output failed") }
-  let budget_verified = @shell.Cmd("moon", budget_args + ["--verify", "examples/budget/quote.json"]).output()
-  if budget_verified.exit_code() != 0 || budget_verified.stdout() != "verified budget: quantity 65854\n" { fail("budget verification failed") }
-  let raised_budget = budget_golden.replace(old="\"budget\":\"1500\"", new="\"budget\":\"1501\"")
-  if raised_budget == budget_golden { fail("budget request fixture did not change") }
+  if budget_plain.exit_code() != 0 ||
+    !budget_plain.stdout().contains("maximum quantity: 65854\n") ||
+    !budget_plain.stdout().contains("settled: USD 1499.99") {
+    fail("budget plain output failed")
+  }
+  let budget_verified = @shell.Cmd(
+    "moon",
+    budget_args + ["--verify", "examples/budget/quote.json"],
+  ).output()
+  if budget_verified.exit_code() != 0 ||
+    budget_verified.stdout() != "verified budget: quantity 65854\n" {
+    fail("budget verification failed")
+  }
+  let raised_budget = budget_golden.replace(
+    old="\"budget\":\"1500\"",
+    new="\"budget\":\"1501\"",
+  )
+  if raised_budget == budget_golden {
+    fail("budget request fixture did not change")
+  }
   @fs.write_file(tampered_path, raised_budget)
-  let substituted_budget = @shell.Cmd("moon", budget_args + ["--verify", tampered_path]).output()
-  if substituted_budget.exit_code() == 0 || substituted_budget.stdout() != "" || !substituted_budget.stderr().contains("budget.request") { fail("untrusted budget substitution must fail") }
+  let substituted_budget = @shell.Cmd(
+    "moon",
+    budget_args + ["--verify", tampered_path],
+  ).output()
+  if substituted_budget.exit_code() == 0 ||
+    substituted_budget.stdout() != "" ||
+    !substituted_budget.stderr().contains("budget.request") {
+    fail("untrusted budget substitution must fail")
+  }
   let budget_recovery = @shell.Cmd("moon", budget_args + ["--json"]).output()
-  if budget_recovery.exit_code() != 0 || budget_recovery.stdout() != budget.stdout() { fail("budget recovery failed") }
-  let bill_args = ["run", "cmd/bill", "--target", target, "--", "examples/bill/input.json", "2", "half-even"]
+  if budget_recovery.exit_code() != 0 ||
+    budget_recovery.stdout() != budget.stdout() {
+    fail("budget recovery failed")
+  }
+  let bill_args = [
+    "run", "cmd/bill", "--target", target, "--", "examples/bill/input.json", "2",
+    "half-even",
+  ]
   let bill = @shell.Cmd("moon", bill_args + ["--json"]).output()
   let bill_golden = @fs.read_file("examples/bill/bill.json").text()
-  if bill.exit_code() != 0 || bill.stdout().trim() != bill_golden.trim() { fail("mixed bill mismatch: \{bill.stderr()}") }
-  let bill_verified = @shell.Cmd("moon", bill_args + ["--verify", "examples/bill/bill.json"]).output()
-  if bill_verified.exit_code() != 0 || bill_verified.stdout() != "verified bill: USD 1502.55\n" { fail("mixed bill verification failed") }
-  @fs.write_file(tampered_path, bill_golden.replace(old="\"unused_units\":\"499\"", new="\"unused_units\":\"500\""))
+  if bill.exit_code() != 0 || bill.stdout().trim() != bill_golden.trim() {
+    fail("mixed bill mismatch: \{bill.stderr()}")
+  }
+  let bill_verified = @shell.Cmd(
+    "moon",
+    bill_args + ["--verify", "examples/bill/bill.json"],
+  ).output()
+  if bill_verified.exit_code() != 0 ||
+    bill_verified.stdout() != "verified bill: USD 1502.55\n" {
+    fail("mixed bill verification failed")
+  }
+  @fs.write_file(
+    tampered_path,
+    bill_golden.replace(
+      old="\"unused_units\":\"499\"",
+      new="\"unused_units\":\"500\"",
+    ),
+  )
   let bill_bad = @shell.Cmd("moon", bill_args + ["--verify", tampered_path]).output()
-  if bill_bad.exit_code() == 0 || bill_bad.stdout() != "" || !bill_bad.stderr().contains("capacity") { fail("mixed package tampering must fail") }
+  if bill_bad.exit_code() == 0 ||
+    bill_bad.stdout() != "" ||
+    !bill_bad.stderr().contains("capacity") {
+    fail("mixed package tampering must fail")
+  }
   let bill_recovery = @shell.Cmd("moon", bill_args + ["--json"]).output()
-  if bill_recovery.exit_code() != 0 || bill_recovery.stdout() != bill.stdout() { fail("mixed bill recovery failed") }
-  let analysis_args = ["run", "cmd/analyze", "--target", target, "--", "examples/stripe/plan.json", "examples/stripe-volume/plan.json", "25"]
+  if bill_recovery.exit_code() != 0 || bill_recovery.stdout() != bill.stdout() {
+    fail("mixed bill recovery failed")
+  }
+  let analysis_args = [
+    "run", "cmd/analyze", "--target", target, "--", "examples/stripe/plan.json",
+    "examples/stripe-volume/plan.json", "25",
+  ]
   let analysis = @shell.Cmd("moon", analysis_args + ["--json"]).output()
   let analysis_golden = @fs.read_file("examples/analysis/report.json").text()
-  if analysis.exit_code() != 0 || analysis.stdout().trim() != analysis_golden.trim() { fail("price analysis mismatch: \{analysis.stderr()}") }
-  let analysis_verified = @shell.Cmd("moon", analysis_args + ["--verify", "examples/analysis/report.json"]).output()
-  if analysis_verified.exit_code() != 0 || analysis_verified.stdout() != "verified analysis: 3 spans\n" { fail("price analysis verification failed") }
-  let altered_extreme = analysis_golden.replace(old="\"minimum_delta\":\"-7.5\"", new="\"minimum_delta\":\"0\"")
-  if altered_extreme == analysis_golden { fail("analysis tamper fixture unchanged") }
+  if analysis.exit_code() != 0 ||
+    analysis.stdout().trim() != analysis_golden.trim() {
+    fail("price analysis mismatch: \{analysis.stderr()}")
+  }
+  let analysis_verified = @shell.Cmd(
+    "moon",
+    analysis_args + ["--verify", "examples/analysis/report.json"],
+  ).output()
+  if analysis_verified.exit_code() != 0 ||
+    analysis_verified.stdout() != "verified analysis: 3 spans\n" {
+    fail("price analysis verification failed")
+  }
+  let altered_extreme = analysis_golden.replace(
+    old="\"minimum_delta\":\"-7.5\"",
+    new="\"minimum_delta\":\"0\"",
+  )
+  if altered_extreme == analysis_golden {
+    fail("analysis tamper fixture unchanged")
+  }
   @fs.write_file(tampered_path, altered_extreme)
-  let analysis_bad = @shell.Cmd("moon", analysis_args + ["--verify", tampered_path]).output()
-  if analysis_bad.exit_code() == 0 || analysis_bad.stdout() != "" || !analysis_bad.stderr().contains("extrema") { fail("analysis extrema tampering must fail") }
+  let analysis_bad = @shell.Cmd(
+    "moon",
+    analysis_args + ["--verify", tampered_path],
+  ).output()
+  if analysis_bad.exit_code() == 0 ||
+    analysis_bad.stdout() != "" ||
+    !analysis_bad.stderr().contains("extrema") {
+    fail("analysis extrema tampering must fail")
+  }
   let analysis_recovery = @shell.Cmd("moon", analysis_args + ["--json"]).output()
-  if analysis_recovery.exit_code() != 0 || analysis_recovery.stdout() != analysis.stdout() { fail("analysis recovery failed") }
-  for (plan, request, fixture, expected) in [
-    ("examples/s3/plan.json", "examples/budget/request.json", "s3-quote", "65854"),
-    ("examples/quota/hole-plan.json", "examples/quota/hole-request.json", "hole-quote", "1"),
-  ] {
-    let quota_args = ["run", "cmd/quota", "--target", target, "--", plan, request, "2", "half-even"]
+  if analysis_recovery.exit_code() != 0 ||
+    analysis_recovery.stdout() != analysis.stdout() {
+    fail("analysis recovery failed")
+  }
+  for
+    (plan, request, fixture, expected) in [
+      (
+        "examples/s3/plan.json", "examples/budget/request.json", "s3-quote", "65854",
+      ),
+      (
+        "examples/quota/hole-plan.json", "examples/quota/hole-request.json", "hole-quote",
+        "1",
+      ),
+    ] {
+    let quota_args = [
+      "run", "cmd/quota", "--target", target, "--", plan, request, "2", "half-even",
+    ]
     let quota = @shell.Cmd("moon", quota_args + ["--json"]).output()
     let quota_golden = @fs.read_file("examples/quota/\{fixture}.json").text()
-    if quota.exit_code() != 0 || quota.stdout().trim() != quota_golden.trim() { fail("quota mismatch: \{quota.stderr()}") }
-    let quota_verified = @shell.Cmd("moon", quota_args + ["--verify", "examples/quota/\{fixture}.json"]).output()
-    if quota_verified.exit_code() != 0 || quota_verified.stdout() != "verified quota: 0..\{expected}\n" { fail("quota verification failed") }
-    let altered_request = quota_golden.replace(old="\"customer\":", new="\"unsupported\":true,\"customer\":")
+    if quota.exit_code() != 0 || quota.stdout().trim() != quota_golden.trim() {
+      fail("quota mismatch: \{quota.stderr()}")
+    }
+    let quota_verified = @shell.Cmd(
+      "moon",
+      quota_args + ["--verify", "examples/quota/\{fixture}.json"],
+    ).output()
+    if quota_verified.exit_code() != 0 ||
+      quota_verified.stdout() != "verified quota: 0..\{expected}\n" {
+      fail("quota verification failed")
+    }
+    let altered_request = quota_golden.replace(
+      old="\"customer\":",
+      new="\"unsupported\":true,\"customer\":",
+    )
     @fs.write_file(tampered_path, altered_request)
     let quota_bad = @shell.Cmd("moon", quota_args + ["--verify", tampered_path]).output()
-    if quota_bad.exit_code() == 0 || quota_bad.stdout() != "" || !quota_bad.stderr().contains("unsupported") { fail("quota unsupported data must fail") }
+    if quota_bad.exit_code() == 0 ||
+      quota_bad.stdout() != "" ||
+      !quota_bad.stderr().contains("unsupported") {
+      fail("quota unsupported data must fail")
+    }
     let quota_recovery = @shell.Cmd("moon", quota_args + ["--json"]).output()
-    if quota_recovery.exit_code() != 0 || quota_recovery.stdout() != quota.stdout() { fail("quota recovery failed") }
+    if quota_recovery.exit_code() != 0 ||
+      quota_recovery.stdout() != quota.stdout() {
+      fail("quota recovery failed")
+    }
   }
-  let catalog_args = ["run", "cmd/catalog", "--target", target, "--", "examples/catalog/catalog.json", "2026-10-22", "examples/catalog/usages.json", "2", "half-even"]
+  let catalog_args = [
+    "run", "cmd/catalog", "--target", target, "--", "examples/catalog/catalog.json",
+    "2026-10-22", "examples/catalog/usages.json", "2", "half-even",
+  ]
   let catalog = @shell.Cmd("moon", catalog_args + ["--json"]).output()
   let catalog_golden = @fs.read_file("examples/catalog/bill.json").text()
-  if catalog.exit_code() != 0 || catalog.stdout().trim() != catalog_golden.trim() { fail("catalog golden mismatch: \{catalog.stderr()}") }
-  let catalog_checked = @shell.Cmd("moon", catalog_args + ["--verify", "examples/catalog/bill.json"]).output()
-  if catalog_checked.exit_code() != 0 || catalog_checked.stdout() != "verified catalog bill: USD 1502.55\n" { fail("catalog verification failed") }
-  let november = @shell.Cmd("moon", ["run", "cmd/catalog", "--target", target, "--", "examples/catalog/catalog.json", "2026-11-01", "examples/catalog/usages.json", "2", "half-even"]).output()
-  if november.exit_code() != 0 || !november.stdout().contains("USD 1503.00") { fail("catalog version boundary failed") }
-  @fs.write_file(tampered_path, catalog_golden.replace(old="\"on\":\"2026-10-22\"", new="\"on\":\"2026-11-01\""))
-  let catalog_bad = @shell.Cmd("moon", catalog_args + ["--verify", tampered_path]).output()
-  if catalog_bad.exit_code() == 0 || catalog_bad.stdout() != "" || !catalog_bad.stderr().contains("catalog.on") { fail("catalog date substitution must fail") }
+  if catalog.exit_code() != 0 ||
+    catalog.stdout().trim() != catalog_golden.trim() {
+    fail("catalog golden mismatch: \{catalog.stderr()}")
+  }
+  let catalog_checked = @shell.Cmd(
+    "moon",
+    catalog_args + ["--verify", "examples/catalog/bill.json"],
+  ).output()
+  if catalog_checked.exit_code() != 0 ||
+    catalog_checked.stdout() != "verified catalog bill: USD 1502.55\n" {
+    fail("catalog verification failed")
+  }
+  let november = @shell.Cmd("moon", [
+    "run", "cmd/catalog", "--target", target, "--", "examples/catalog/catalog.json",
+    "2026-11-01", "examples/catalog/usages.json", "2", "half-even",
+  ]).output()
+  if november.exit_code() != 0 || !november.stdout().contains("USD 1503.00") {
+    fail("catalog version boundary failed")
+  }
+  @fs.write_file(
+    tampered_path,
+    catalog_golden.replace(
+      old="\"on\":\"2026-10-22\"",
+      new="\"on\":\"2026-11-01\"",
+    ),
+  )
+  let catalog_bad = @shell.Cmd(
+    "moon",
+    catalog_args + ["--verify", tampered_path],
+  ).output()
+  if catalog_bad.exit_code() == 0 ||
+    catalog_bad.stdout() != "" ||
+    !catalog_bad.stderr().contains("catalog.on") {
+    fail("catalog date substitution must fail")
+  }
   let catalog_recovery = @shell.Cmd("moon", catalog_args + ["--json"]).output()
-  if catalog_recovery.exit_code() != 0 || catalog_recovery.stdout() != catalog.stdout() { fail("catalog recovery failed") }
-  let bc_args = ["run", "cmd/compare-bills", "--target", target, "--", "examples/bill/input.json", "examples/bill-comparison/candidate.json", "2", "half-even"]
+  if catalog_recovery.exit_code() != 0 ||
+    catalog_recovery.stdout() != catalog.stdout() {
+    fail("catalog recovery failed")
+  }
+  let bc_args = [
+    "run", "cmd/compare-bills", "--target", target, "--", "examples/bill/input.json",
+    "examples/bill-comparison/candidate.json", "2", "half-even",
+  ]
   let bc = @shell.Cmd("moon", bc_args + ["--json"]).output()
   let bc_golden = @fs.read_file("examples/bill-comparison/report.json").text()
-  if bc.exit_code() != 0 || bc.stdout().trim() != bc_golden.trim() { fail("bill comparison mismatch: \{bc.stderr()}") }
-  let bc_checked = @shell.Cmd("moon", bc_args + ["--verify", "examples/bill-comparison/report.json"]).output()
-  if bc_checked.exit_code() != 0 || bc_checked.stdout() != "verified bill comparison: settled delta -100.8\n" { fail("bill comparison verification failed") }
-  @fs.write_file(tampered_path, bc_golden.replace(old="\"settled_delta\":\"-100.8\"", new="\"settled_delta\":\"0\""))
+  if bc.exit_code() != 0 || bc.stdout().trim() != bc_golden.trim() {
+    fail("bill comparison mismatch: \{bc.stderr()}")
+  }
+  let bc_checked = @shell.Cmd(
+    "moon",
+    bc_args + ["--verify", "examples/bill-comparison/report.json"],
+  ).output()
+  if bc_checked.exit_code() != 0 ||
+    bc_checked.stdout() != "verified bill comparison: settled delta -100.8\n" {
+    fail("bill comparison verification failed")
+  }
+  @fs.write_file(
+    tampered_path,
+    bc_golden.replace(
+      old="\"settled_delta\":\"-100.8\"",
+      new="\"settled_delta\":\"0\"",
+    ),
+  )
   let bc_bad = @shell.Cmd("moon", bc_args + ["--verify", tampered_path]).output()
-  if bc_bad.exit_code() == 0 || bc_bad.stdout() != "" || !bc_bad.stderr().contains("delta") { fail("bill comparison forgery must fail") }
+  if bc_bad.exit_code() == 0 ||
+    bc_bad.stdout() != "" ||
+    !bc_bad.stderr().contains("delta") {
+    fail("bill comparison forgery must fail")
+  }
   let bc_recovery = @shell.Cmd("moon", bc_args + ["--json"]).output()
-  if bc_recovery.exit_code() != 0 || bc_recovery.stdout() != bc.stdout() { fail("bill comparison recovery failed") }
-  let bq_args = ["run", "cmd/bill-quota", "--target", target, "--", "examples/bill-quota/input.json", "2", "half-even"]
+  if bc_recovery.exit_code() != 0 || bc_recovery.stdout() != bc.stdout() {
+    fail("bill comparison recovery failed")
+  }
+  let bq_args = [
+    "run", "cmd/bill-quota", "--target", target, "--", "examples/bill-quota/input.json",
+    "2", "half-even",
+  ]
   let bq = @shell.Cmd("moon", bq_args + ["--json"]).output()
   let bq_golden = @fs.read_file("examples/bill-quota/report.json").text()
-  if bq.exit_code() != 0 || bq.stdout().trim() != bq_golden.trim() { fail("whole-bill quota mismatch: \{bq.stderr()}") }
+  if bq.exit_code() != 0 || bq.stdout().trim() != bq_golden.trim() {
+    fail("whole-bill quota mismatch: \{bq.stderr()}")
+  }
   let bq_plain = @shell.Cmd("moon", bq_args).output()
-  if bq_plain.exit_code() != 0 || !bq_plain.stdout().contains("messages 0..3000") { fail("whole-bill variable quota failed") }
-  let bq_checked = @shell.Cmd("moon", bq_args + ["--verify", "examples/bill-quota/report.json"]).output()
-  if bq_checked.exit_code() != 0 || bq_checked.stdout() != "verified bill quota: USD 1502.55\n" { fail("whole-bill quota verification failed") }
-  let altered_bill = bq_golden.replace(old="\"amount\":\"1503.40\"", new="\"amount\":\"1503.39\"")
-  if altered_bill == bq_golden { fail("bill quota witness fixture did not change") }
+  if bq_plain.exit_code() != 0 ||
+    !bq_plain.stdout().contains("messages 0..3000") {
+    fail("whole-bill variable quota failed")
+  }
+  let bq_checked = @shell.Cmd(
+    "moon",
+    bq_args + ["--verify", "examples/bill-quota/report.json"],
+  ).output()
+  if bq_checked.exit_code() != 0 ||
+    bq_checked.stdout() != "verified bill quota: USD 1502.55\n" {
+    fail("whole-bill quota verification failed")
+  }
+  let altered_bill = bq_golden.replace(
+    old="\"amount\":\"1503.40\"",
+    new="\"amount\":\"1503.39\"",
+  )
+  if altered_bill == bq_golden {
+    fail("bill quota witness fixture did not change")
+  }
   @fs.write_file(tampered_path, altered_bill)
   let bq_bad = @shell.Cmd("moon", bq_args + ["--verify", tampered_path]).output()
-  if bq_bad.exit_code() == 0 || bq_bad.stdout() != "" || !bq_bad.stderr().contains("first_unaffordable") { fail("whole-bill witness tampering must fail") }
+  if bq_bad.exit_code() == 0 ||
+    bq_bad.stdout() != "" ||
+    !bq_bad.stderr().contains("first_unaffordable") {
+    fail("whole-bill witness tampering must fail")
+  }
   let bq_input = @fs.read_file("examples/bill-quota/input.json").text()
-  @fs.write_file(tampered_path, bq_input.replace(old="\"budget\":\"1503\"", new="\"budget\":\"1499\""))
-  let bq_infeasible = @shell.Cmd("moon", ["run", "cmd/bill-quota", "--target", target, "--", tampered_path, "2", "half-even"]).output()
-  if bq_infeasible.exit_code() == 0 || bq_infeasible.stdout() != "" || !bq_infeasible.stderr().contains("infeasible") { fail("infeasible fixed costs must not yield a zero quote") }
+  @fs.write_file(
+    tampered_path,
+    bq_input.replace(old="\"budget\":\"1503\"", new="\"budget\":\"1499\""),
+  )
+  let bq_infeasible = @shell.Cmd("moon", [
+    "run", "cmd/bill-quota", "--target", target, "--", tampered_path, "2", "half-even",
+  ]).output()
+  if bq_infeasible.exit_code() == 0 ||
+    bq_infeasible.stdout() != "" ||
+    !bq_infeasible.stderr().contains("infeasible") {
+    fail("infeasible fixed costs must not yield a zero quote")
+  }
   let bq_recovery = @shell.Cmd("moon", bq_args + ["--json"]).output()
-  if bq_recovery.exit_code() != 0 || bq_recovery.stdout() != bq.stdout() { fail("whole-bill quota recovery failed") }
-  let coverage_args = ["run", "cmd/coverage", "--target", target, "--", "examples/catalog/catalog.json", "2026-09-30", "2026-11-02"]
+  if bq_recovery.exit_code() != 0 || bq_recovery.stdout() != bq.stdout() {
+    fail("whole-bill quota recovery failed")
+  }
+  let coverage_args = [
+    "run", "cmd/coverage", "--target", target, "--", "examples/catalog/catalog.json",
+    "2026-09-30", "2026-11-02",
+  ]
   let coverage = @shell.Cmd("moon", coverage_args).output()
   let coverage_expected = "{\"schema\":\"jieheng.coverage.v1\",\"starts_on\":\"2026-09-30\",\"ends_before\":\"2026-11-02\",\"gaps\":[{\"metric\":\"storage-gb-month\",\"starts_on\":\"2026-09-30\",\"ends_before\":\"2026-10-01\"},{\"metric\":\"messages\",\"starts_on\":\"2026-09-30\",\"ends_before\":\"2026-10-01\"}]}\n"
-  if coverage.exit_code() != 0 || coverage.stdout() != coverage_expected { fail("coverage report mismatch: \{coverage.stderr()} \{coverage.stdout()}") }
+  if coverage.exit_code() != 0 || coverage.stdout() != coverage_expected {
+    fail("coverage report mismatch: \{coverage.stderr()} \{coverage.stdout()}")
+  }
   let coverage_bad = @shell.Cmd("moon", coverage_args + ["--require-complete"]).output()
-  if coverage_bad.exit_code() != 2 || coverage_bad.stdout() != "" || !coverage_bad.stderr().contains("2 pricing gaps") { fail("coverage release gate must fail without stdout") }
-  let coverage_good = @shell.Cmd("moon", ["run", "cmd/coverage", "--target", target, "--", "examples/catalog/catalog.json", "2026-10-01", "2026-11-02", "--require-complete"]).output()
-  if coverage_good.exit_code() != 0 || !coverage_good.stdout().contains("\"gaps\":[]") { fail("complete catalog window must pass") }
+  if coverage_bad.exit_code() != 2 ||
+    coverage_bad.stdout() != "" ||
+    !coverage_bad.stderr().contains("2 pricing gaps") {
+    fail("coverage release gate must fail without stdout")
+  }
+  let coverage_good = @shell.Cmd("moon", [
+    "run", "cmd/coverage", "--target", target, "--", "examples/catalog/catalog.json",
+    "2026-10-01", "2026-11-02", "--require-complete",
+  ]).output()
+  if coverage_good.exit_code() != 0 ||
+    !coverage_good.stdout().contains("\"gaps\":[]") {
+    fail("complete catalog window must pass")
+  }
   let coverage_recovery = @shell.Cmd("moon", coverage_args).output()
-  if coverage_recovery.exit_code() != 0 || coverage_recovery.stdout() != coverage.stdout() { fail("coverage recovery failed") }
-  let explain_args = ["run", "cmd/explain", "--target", target, "--", "examples/bill/input.json", "examples/bill/bill.json", "2", "half-even"]
+  if coverage_recovery.exit_code() != 0 ||
+    coverage_recovery.stdout() != coverage.stdout() {
+    fail("coverage recovery failed")
+  }
+  let explain_args = [
+    "run", "cmd/explain", "--target", target, "--", "examples/bill/input.json", "examples/bill/bill.json",
+    "2", "half-even",
+  ]
   let explained = @shell.Cmd("moon", explain_args).output()
   let statement = @fs.read_file("examples/report/statement.md").text()
-  if explained.exit_code() != 0 || explained.stdout() != statement { fail("Markdown statement differs on \{target}: \{explained.stderr()}") }
-  @fs.write_file(tampered_path, bill_golden.replace(old="\"unused_units\":\"499\"", new="\"unused_units\":\"500\""))
-  let explanation_bad = @shell.Cmd("moon", ["run", "cmd/explain", "--target", target, "--", "examples/bill/input.json", tampered_path, "2", "half-even"]).output()
-  if explanation_bad.exit_code() == 0 || explanation_bad.stdout() != "" || !explanation_bad.stderr().contains("capacity") { fail("tampered evidence must not be rendered as an explanation") }
-  @fs.write_file(tampered_path, bill_golden.replace(old="\"schema\":", new="\"unsupported\":true,\"schema\":"))
-  let explanation_unsupported = @shell.Cmd("moon", ["run", "cmd/explain", "--target", target, "--", "examples/bill/input.json", tampered_path, "2", "half-even"]).output()
-  if explanation_unsupported.exit_code() == 0 || explanation_unsupported.stdout() != "" || !explanation_unsupported.stderr().contains("unsupported") { fail("unsupported report input must not be silently dropped") }
+  if explained.exit_code() != 0 || explained.stdout() != statement {
+    fail("Markdown statement differs on \{target}: \{explained.stderr()}")
+  }
+  @fs.write_file(
+    tampered_path,
+    bill_golden.replace(
+      old="\"unused_units\":\"499\"",
+      new="\"unused_units\":\"500\"",
+    ),
+  )
+  let explanation_bad = @shell.Cmd("moon", [
+    "run", "cmd/explain", "--target", target, "--", "examples/bill/input.json", tampered_path,
+    "2", "half-even",
+  ]).output()
+  if explanation_bad.exit_code() == 0 ||
+    explanation_bad.stdout() != "" ||
+    !explanation_bad.stderr().contains("capacity") {
+    fail("tampered evidence must not be rendered as an explanation")
+  }
+  @fs.write_file(
+    tampered_path,
+    bill_golden.replace(
+      old="\"schema\":",
+      new="\"unsupported\":true,\"schema\":",
+    ),
+  )
+  let explanation_unsupported = @shell.Cmd("moon", [
+    "run", "cmd/explain", "--target", target, "--", "examples/bill/input.json", tampered_path,
+    "2", "half-even",
+  ]).output()
+  if explanation_unsupported.exit_code() == 0 ||
+    explanation_unsupported.stdout() != "" ||
+    !explanation_unsupported.stderr().contains("unsupported") {
+    fail("unsupported report input must not be silently dropped")
+  }
   let explanation_recovery = @shell.Cmd("moon", explain_args).output()
-  if explanation_recovery.exit_code() != 0 || explanation_recovery.stdout() != statement { fail("statement recovery failed") }
-  let migration_args = ["run", "cmd/migration", "--target", target, "--", "examples/catalog/catalog.json", "examples/migration/candidate.json", "2026-10-01", "2026-11-02"]
+  if explanation_recovery.exit_code() != 0 ||
+    explanation_recovery.stdout() != statement {
+    fail("statement recovery failed")
+  }
+  let migration_args = [
+    "run", "cmd/migration", "--target", target, "--", "examples/catalog/catalog.json",
+    "examples/migration/candidate.json", "2026-10-01", "2026-11-02",
+  ]
   let migration = @shell.Cmd("moon", migration_args).output()
   let migration_golden = @fs.read_file("examples/migration/report.json").text()
-  if migration.exit_code() != 0 || migration.stdout().trim() != migration_golden.trim() { fail("migration report mismatch: \{migration.stderr()}") }
-  let migration_verified = @shell.Cmd("moon", migration_args + ["--verify", "examples/migration/report.json"]).output()
-  if migration_verified.exit_code() != 0 || migration_verified.stdout() != migration.stdout() { fail("migration verification failed") }
-  let migration_blocked = @shell.Cmd("moon", migration_args + ["--require-compatible"]).output()
-  if migration_blocked.exit_code() != 2 || migration_blocked.stdout() != "" || !migration_blocked.stderr().contains("mapping or review") { fail("migration gap must block release") }
-  let migration_compatible_args = ["run", "cmd/migration", "--target", target, "--", "examples/catalog/catalog.json", "examples/migration/candidate.json", "2026-10-17", "2026-11-02"]
-  let migration_compatible = @shell.Cmd("moon", migration_compatible_args + ["--require-compatible"]).output()
-  if migration_compatible.exit_code() != 0 { fail("covered review changes should be structurally compatible") }
-  let migration_review = @shell.Cmd("moon", migration_compatible_args + ["--require-unchanged"]).output()
-  if migration_review.exit_code() != 2 || migration_review.stdout() != "" { fail("price changes must still require review") }
-  @fs.write_file(tampered_path, migration_golden.replace(old="candidate-gap",new="pricing-changed"))
-  let migration_bad = @shell.Cmd("moon", migration_args + ["--verify", tampered_path]).output()
-  if migration_bad.exit_code() == 0 || migration_bad.stdout() != "" || !migration_bad.stderr().contains("changes") { fail("migration classification tampering must fail") }
+  if migration.exit_code() != 0 ||
+    migration.stdout().trim() != migration_golden.trim() {
+    fail("migration report mismatch: \{migration.stderr()}")
+  }
+  let migration_verified = @shell.Cmd(
+    "moon",
+    migration_args + ["--verify", "examples/migration/report.json"],
+  ).output()
+  if migration_verified.exit_code() != 0 ||
+    migration_verified.stdout() != migration.stdout() {
+    fail("migration verification failed")
+  }
+  let migration_blocked = @shell.Cmd(
+    "moon",
+    migration_args + ["--require-compatible"],
+  ).output()
+  if migration_blocked.exit_code() != 2 ||
+    migration_blocked.stdout() != "" ||
+    !migration_blocked.stderr().contains("mapping or review") {
+    fail("migration gap must block release")
+  }
+  let migration_compatible_args = [
+    "run", "cmd/migration", "--target", target, "--", "examples/catalog/catalog.json",
+    "examples/migration/candidate.json", "2026-10-17", "2026-11-02",
+  ]
+  let migration_compatible = @shell.Cmd(
+    "moon",
+    migration_compatible_args + ["--require-compatible"],
+  ).output()
+  if migration_compatible.exit_code() != 0 {
+    fail("covered review changes should be structurally compatible")
+  }
+  let migration_review = @shell.Cmd(
+    "moon",
+    migration_compatible_args + ["--require-unchanged"],
+  ).output()
+  if migration_review.exit_code() != 2 || migration_review.stdout() != "" {
+    fail("price changes must still require review")
+  }
+  @fs.write_file(
+    tampered_path,
+    migration_golden.replace(old="candidate-gap", new="pricing-changed"),
+  )
+  let migration_bad = @shell.Cmd(
+    "moon",
+    migration_args + ["--verify", tampered_path],
+  ).output()
+  if migration_bad.exit_code() == 0 ||
+    migration_bad.stdout() != "" ||
+    !migration_bad.stderr().contains("changes") {
+    fail("migration classification tampering must fail")
+  }
   let migration_recovery = @shell.Cmd("moon", migration_args).output()
-  if migration_recovery.exit_code() != 0 || migration_recovery.stdout() != migration.stdout() { fail("migration recovery failed") }
-  let replay_args = ["run", "cmd/replay", "--target", target, "--", "examples/catalog/catalog.json", "examples/migration/candidate.json", "examples/replay/cases.json", "2", "half-even"]
+  if migration_recovery.exit_code() != 0 ||
+    migration_recovery.stdout() != migration.stdout() {
+    fail("migration recovery failed")
+  }
+  let replay_args = [
+    "run", "cmd/replay", "--target", target, "--", "examples/catalog/catalog.json",
+    "examples/migration/candidate.json", "examples/replay/cases.json", "2", "half-even",
+  ]
   let replay = @shell.Cmd("moon", replay_args).output()
   let replay_golden = @fs.read_file("examples/replay/report.json").text()
-  if replay.exit_code() != 0 || replay.stdout().trim() != replay_golden.trim() { fail("catalog replay mismatch: \{replay.stderr()}") }
-  let replay_checked = @shell.Cmd("moon", replay_args + ["--verify", "examples/replay/report.json", "--policy", "examples/replay/policy.json"]).output()
-  if replay_checked.exit_code() != 0 || replay_checked.stdout() != replay.stdout() { fail("verified replay policy workflow failed") }
-  let replay_blocked = @shell.Cmd("moon", replay_args + ["--policy", "examples/replay/strict-policy.json"]).output()
-  if replay_blocked.exit_code() != 2 || replay_blocked.stdout() != "" || !replay_blocked.stderr().contains("customer 'large'") { fail("aggregate savings must not hide an individual increase") }
-  @fs.write_file(tampered_path, replay_golden.replace(old="\"increased\":1",new="\"increased\":0"))
+  if replay.exit_code() != 0 || replay.stdout().trim() != replay_golden.trim() {
+    fail("catalog replay mismatch: \{replay.stderr()}")
+  }
+  let replay_checked = @shell.Cmd(
+    "moon",
+    replay_args +
+    [
+      "--verify", "examples/replay/report.json", "--policy", "examples/replay/policy.json",
+    ],
+  ).output()
+  if replay_checked.exit_code() != 0 ||
+    replay_checked.stdout() != replay.stdout() {
+    fail("verified replay policy workflow failed")
+  }
+  let replay_blocked = @shell.Cmd(
+    "moon",
+    replay_args + ["--policy", "examples/replay/strict-policy.json"],
+  ).output()
+  if replay_blocked.exit_code() != 2 ||
+    replay_blocked.stdout() != "" ||
+    !replay_blocked.stderr().contains("customer 'large'") {
+    fail("aggregate savings must not hide an individual increase")
+  }
+  @fs.write_file(
+    tampered_path,
+    replay_golden.replace(old="\"increased\":1", new="\"increased\":0"),
+  )
   let replay_bad = @shell.Cmd("moon", replay_args + ["--verify", tampered_path]).output()
-  if replay_bad.exit_code() == 0 || replay_bad.stdout() != "" || !replay_bad.stderr().contains("replay.totals") { fail("replay distribution tampering must fail") }
+  if replay_bad.exit_code() == 0 ||
+    replay_bad.stdout() != "" ||
+    !replay_bad.stderr().contains("replay.totals") {
+    fail("replay distribution tampering must fail")
+  }
   let policy_text = @fs.read_file("examples/replay/policy.json").text()
-  @fs.write_file(tampered_path, policy_text.replace(old="\"max_increase_percent\":\"1\"",new="\"max_increase_percent\":\"0\""))
-  let replay_percent = @shell.Cmd("moon", replay_args + ["--policy", tampered_path]).output()
-  if replay_percent.exit_code() != 2 || replay_percent.stdout() != "" || !replay_percent.stderr().contains("customer 'large'") { fail("relative limit must be checked even when the absolute limit passes") }
+  @fs.write_file(
+    tampered_path,
+    policy_text.replace(
+      old="\"max_increase_percent\":\"1\"",
+      new="\"max_increase_percent\":\"0\"",
+    ),
+  )
+  let replay_percent = @shell.Cmd(
+    "moon",
+    replay_args + ["--policy", tampered_path],
+  ).output()
+  if replay_percent.exit_code() != 2 ||
+    replay_percent.stdout() != "" ||
+    !replay_percent.stderr().contains("customer 'large'") {
+    fail("relative limit must be checked even when the absolute limit passes")
+  }
   let replay_cases = @fs.read_file("examples/replay/cases.json").text()
-  @fs.write_file(tampered_path, replay_cases.replace(old="\"schema\":",new="\"extension\":true,\"schema\":"))
-  let replay_unsupported = @shell.Cmd("moon", ["run", "cmd/replay", "--target", target, "--", "examples/catalog/catalog.json", "examples/migration/candidate.json", tampered_path, "2", "half-even"]).output()
-  if replay_unsupported.exit_code() == 0 || replay_unsupported.stdout() != "" || !replay_unsupported.stderr().contains("unsupported") { fail("unsupported replay input must be rejected") }
+  @fs.write_file(
+    tampered_path,
+    replay_cases.replace(
+      old="\"schema\":",
+      new="\"extension\":true,\"schema\":",
+    ),
+  )
+  let replay_unsupported = @shell.Cmd("moon", [
+    "run", "cmd/replay", "--target", target, "--", "examples/catalog/catalog.json",
+    "examples/migration/candidate.json", tampered_path, "2", "half-even",
+  ]).output()
+  if replay_unsupported.exit_code() == 0 ||
+    replay_unsupported.stdout() != "" ||
+    !replay_unsupported.stderr().contains("unsupported") {
+    fail("unsupported replay input must be rejected")
+  }
   let replay_recovery = @shell.Cmd("moon", replay_args).output()
-  if replay_recovery.exit_code() != 0 || replay_recovery.stdout() != replay.stdout() { fail("replay recovery failed") }
+  if replay_recovery.exit_code() != 0 ||
+    replay_recovery.stdout() != replay.stdout() {
+    fail("replay recovery failed")
+  }
   println("file workflow verified on \{target}")
 }

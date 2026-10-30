@@ -1,3 +1,4 @@
+///|
 import {
   "moonbitlang/async@0.22.5",
   "moonbitlang/async@0.22.5/shell",
@@ -5,14 +6,28 @@ import {
   "moonbitlang/core/env",
 }
 
-async fn checked(program : String, args : Array[String], cwd : String, logs : String, step : String) -> String {
+///|
+async fn checked(
+  program : String,
+  args : Array[String],
+  cwd : String,
+  logs : String,
+  step : String,
+) -> String {
   println("verify: \{step}")
   let output = @shell.Cmd(program, args, cwd~).output()
   let path = logs + "/" + step + ".log"
-  @fs.write_file(path, program + " " + args.join(" ") + "\n" + output.stdout() + output.stderr())
+  @fs.write_file(
+    path,
+    program + " " + args.join(" ") + "\n" + output.stdout() + output.stderr(),
+  )
   if program == "moon" || output.exit_code() != 0 {
-    if output.stdout() != "" { println(output.stdout()) }
-    if output.stderr() != "" { println(output.stderr()) }
+    if output.stdout() != "" {
+      println(output.stdout())
+    }
+    if output.stderr() != "" {
+      println(output.stderr())
+    }
   }
   if output.exit_code() != 0 {
     fail("\{step} failed (exit \{output.exit_code()}); inspect \{path}")
@@ -20,16 +35,25 @@ async fn checked(program : String, args : Array[String], cwd : String, logs : St
   output.stdout()
 }
 
+///|
 fn source_file(path : String) -> Bool {
-  path.has_suffix(".mbt") || path.has_suffix(".mbti") ||
-  path.has_suffix("moon.pkg") || path.has_suffix("moon.mod") || path == "moon.work"
+  path.has_suffix(".mbt") ||
+  path.has_suffix(".mbti") ||
+  path.has_suffix(".mbtx") ||
+  path.has_suffix(".mbt.md") ||
+  path.has_suffix("moon.pkg") ||
+  path.has_suffix("moon.mod") ||
+  path == "moon.work"
 }
 
+///|
 async fn main {
   let args = @env.args()
   if (args.length() != 2 && args.length() != 3) ||
     (args[1] != "portable" && args[1] != "all") {
-    fail("usage: moon run scripts/verify.mbtx portable|all [GIT_REVISION]; all executes Native and requires a C toolchain")
+    fail(
+      "usage: moon run scripts/verify.mbtx portable|all [GIT_REVISION]; all executes Native and requires a C toolchain",
+    )
   }
   let root_output = @shell.Cmd("git", ["rev-parse", "--show-toplevel"]).output()
   root_output.check()
@@ -37,7 +61,9 @@ async fn main {
   let logs = match @env.get_env_var("JIEHENG_EVIDENCE_DIR") {
     Some(base) => {
       let path = base + "/verify"
-      if @fs.exists(path) {fail("evidence directory already exists: \{path}")}
+      if @fs.exists(path) {
+        fail("evidence directory already exists: \{path}")
+      }
       @fs.mkdir(path, recursive=true)
       path
     }
@@ -47,60 +73,158 @@ async fn main {
   let mut directory = root
   let mut revision = "working-tree"
   let tracked = if args.length() == 3 {
-    let resolved = checked("git", ["rev-parse", "--verify", "--end-of-options", args[2] + "^{tree}"], root, logs, "resolve-tree")
+    let resolved = checked(
+      "git",
+      ["rev-parse", "--verify", "--end-of-options", args[2] + "^{tree}"],
+      root,
+      logs,
+      "resolve-tree",
+    )
     revision = resolved.trim().to_owned()
     // Resolve first: archive receives only the object name emitted by Git.
     if (revision.length() != 40 && revision.length() != 64) ||
-      !revision.iter().all(c => (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')) {
+      !revision
+      .iter()
+      .all(c => (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')) {
       fail("unexpected Git tree object name")
     }
     directory = logs + "/source"
     @fs.mkdir(directory)
     let archive = logs + "/source.tar"
-    ignore(checked("git", ["archive", "--format=tar", "--output=" + archive, revision], root, logs, "archive"))
-    ignore(checked("tar", ["-xf", archive, "-C", directory], root, logs, "extract"))
-    checked("git", ["ls-tree", "-r", "--name-only", "-z", revision], root, logs, "tracked-files")
+    ignore(
+      checked(
+        "git",
+        ["archive", "--format=tar", "--output=" + archive, revision],
+        root,
+        logs,
+        "archive",
+      ),
+    )
+    ignore(
+      checked("tar", ["-xf", archive, "-C", directory], root, logs, "extract"),
+    )
+    checked(
+      "git",
+      ["ls-tree", "-r", "--name-only", "-z", revision],
+      root,
+      logs,
+      "tracked-files",
+    )
   } else {
     checked("git", ["ls-files", "-z"], root, logs, "tracked-files")
   }
   let originals : Map[String, String] = Map([])
-  let paths = tracked.split("\u{0}").filter(p => !p.is_empty()).map(p => p.to_owned()).collect()
+  let paths = tracked
+    .split("\u{0}")
+    .filter(p => !p.is_empty())
+    .map(p => p.to_owned())
+    .collect()
   for path in paths {
     if source_file(path) {
-      originals[path] = @fs.read_file(directory + "/" + path).text().replace_all(old="\r\n", new="\n")
+      originals[path] = @fs.read_file(directory + "/" + path)
+        .text()
+        .replace_all(old="\r\n", new="\n")
     }
     if path.has_suffix("moon.pkg") {
-      let interface_path = path.strip_suffix("moon.pkg").unwrap().to_owned() + "pkg.generated.mbti"
+      let interface_path = path.strip_suffix("moon.pkg").unwrap().to_owned() +
+        "pkg.generated.mbti"
       if !paths.contains(interface_path) {
-        fail("missing tracked interface: \{interface_path}; run moon info and review the result")
+        fail(
+          "missing tracked interface: \{interface_path}; run moon info and review the result",
+        )
       }
     }
   }
-  let versions = checked("moon", ["version", "--all"], directory, logs, "toolchain")
+  let versions = checked(
+    "moon",
+    ["version", "--all"],
+    directory,
+    logs,
+    "toolchain",
+  )
   ignore(checked("moon", ["fmt"], directory, logs, "format"))
+  let scripts = paths.filter(p => p.has_suffix(".mbtx"))
+  if !scripts.is_empty() {
+    ignore(
+      checked("moon", ["fmt", ..scripts], directory, logs, "format-scripts"),
+    )
+  }
   ignore(checked("moon", ["info"], directory, logs, "interfaces"))
   for path, original in originals {
-    let generated = @fs.read_file(directory + "/" + path).text().replace_all(old="\r\n", new="\n")
+    let generated = @fs.read_file(directory + "/" + path)
+      .text()
+      .replace_all(old="\r\n", new="\n")
     if generated != original {
       @fs.write_file(logs + "/drift-original.txt", original)
       @fs.write_file(logs + "/drift-generated.txt", generated)
-      fail("format/interface drift: \{path}; review generated changes before release; logs: \{logs}")
+      fail(
+        "format/interface drift: \{path}; review generated changes before release; logs: \{logs}",
+      )
     }
   }
-  ignore(checked("moon", ["check", "--target", "all", "--deny-warn"], directory, logs, "strict-check"))
-  let targets = if args[1] == "all" { ["wasm", "wasm-gc", "js", "native"] } else { ["wasm", "wasm-gc", "js"] }
-  for target in targets {
-    ignore(checked("moon", ["test", "--target", target, "--deny-warn"], directory, logs, "tests-" + target))
-    ignore(checked("moon", ["run", "cmd/demo", "--target", target], directory, logs, "demo-" + target))
+  ignore(
+    checked(
+      "moon",
+      ["check", "--target", "all", "--deny-warn"],
+      directory,
+      logs,
+      "strict-check",
+    ),
+  )
+  let targets = if args[1] == "all" {
+    ["wasm", "wasm-gc", "js", "native"]
+  } else {
+    ["wasm", "wasm-gc", "js"]
   }
-  ignore(checked("moon", ["run", "scripts/e2e.mbtx", "wasm"], directory, logs, "files-wasm"))
+  for target in targets {
+    ignore(
+      checked(
+        "moon",
+        ["test", "--target", target, "--deny-warn"],
+        directory,
+        logs,
+        "tests-" + target,
+      ),
+    )
+    ignore(
+      checked(
+        "moon",
+        ["run", "cmd/demo", "--target", target],
+        directory,
+        logs,
+        "demo-" + target,
+      ),
+    )
+  }
+  ignore(
+    checked(
+      "moon",
+      ["run", "scripts/e2e.mbtx", "wasm"],
+      directory,
+      logs,
+      "files-wasm",
+    ),
+  )
   if args[1] == "all" {
-    ignore(checked("moon", ["run", "scripts/e2e.mbtx", "native"], directory, logs, "files-native"))
+    ignore(
+      checked(
+        "moon",
+        ["run", "scripts/e2e.mbtx", "native"],
+        directory,
+        logs,
+        "files-native",
+      ),
+    )
   }
   let summary : Json = {
-    "schema": "jieheng.verification.v1", "source": revision,
-    "profile": args[1], "targets": targets, "toolchain": versions,
-    "format_and_interfaces_unchanged": true, "line_endings_normalized": true, "result": "passed",
+    "schema": "jieheng.verification.v1",
+    "source": revision,
+    "profile": args[1],
+    "targets": targets,
+    "toolchain": versions,
+    "format_and_interfaces_unchanged": true,
+    "line_endings_normalized": true,
+    "result": "passed",
   }
   @fs.write_file(logs + "/result.json", summary.stringify() + "\n")
   println("verification passed: \{args[1]}; source \{revision}")

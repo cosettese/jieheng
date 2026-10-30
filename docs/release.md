@@ -23,6 +23,8 @@ moon run scripts/verify.mbtx all HEAD
 
 ## 当前交付边界
 
+源码快照验证还显式格式化全部受版本控制的 .mbtx 自动化脚本，并将其与执行前内容比较；可执行 Markdown 示例也纳入漂移检查。比较仍只规范 CRLF/LF，其他格式变化必须修正后重新验证。统一验收入口、每阶段证据和 CI 下载方式见 [验收索引](acceptance.md)。
+
 - 公开 API 与 JSON 格式以 `pkg.generated.mbti` 和 `docs/formats.md` 及其链接为准；现有规范示例由端到端流程检查。变更格式或诊断类别时需补充回归测试并记录兼容性影响。
 - 独立消费模块通过 `moon.work` 从源码接入，尚未发布 Mooncakes。禁止将未发布版本当作可直接从注册表安装的包。
 - 数值价格事实、假设合同参数及依赖许可见 `SOURCES.md`；项目使用 Apache-2.0。当前不包含税、汇率、支付或完整供应商发票处理。

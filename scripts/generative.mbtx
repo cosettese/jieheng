@@ -1,3 +1,4 @@
+///|
 import {
   "moonbitlang/async@0.22.5",
   "moonbitlang/async@0.22.5/shell",
@@ -5,59 +6,121 @@ import {
   "moonbitlang/core/env",
 }
 
+///|
 async fn main {
   let args = @env.args()
-  if args.length()!=2 || (args[1]!="portable" && args[1]!="all") {fail("usage: moon run scripts/generative.mbtx portable|all")}
+  if args.length() != 2 || (args[1] != "portable" && args[1] != "all") {
+    fail("usage: moon run scripts/generative.mbtx portable|all")
+  }
   let logs = match @env.get_env_var("JIEHENG_EVIDENCE_DIR") {
     Some(base) => {
       let path = base + "/generative"
-      if @fs.exists(path) {fail("evidence directory already exists: \{path}")}
+      if @fs.exists(path) {
+        fail("evidence directory already exists: \{path}")
+      }
       @fs.mkdir(path, recursive=true)
       path
     }
     None => @fs.tmpdir(prefix="jieheng-generative-")
   }
   println("generative logs: \{logs}")
-  let targets = if args[1]=="all" {["wasm","wasm-gc","js","native"]} else {["wasm","wasm-gc","js"]}
-  let seeds = ["0","1","4294967295"]
-  let references : Map[String,String] = Map([])
+  let targets = if args[1] == "all" {
+    ["wasm", "wasm-gc", "js", "native"]
+  } else {
+    ["wasm", "wasm-gc", "js"]
+  }
+  let seeds = ["0", "1", "4294967295"]
+  let references : Map[String, String] = Map([])
   let results : Array[Json] = []
-  let versions = @shell.Cmd("moon",["version","--all"]).output()
+  let versions = @shell.Cmd("moon", ["version", "--all"]).output()
   versions.check()
-  let head = @shell.Cmd("git",["rev-parse","HEAD"]).output()
+  let head = @shell.Cmd("git", ["rev-parse", "HEAD"]).output()
   head.check()
-  let status = @shell.Cmd("git",["status","--porcelain"]).output()
+  let status = @shell.Cmd("git", ["status", "--porcelain"]).output()
   status.check()
-  for target in targets {
-    for seed in seeds {
-      for selected in [false,true] {
-        if selected && seed!="1" {continue}
-        let command = ["run","cmd/generative","--target",target,"--",seed,"32"] +
-          (if selected {["--case","31"]} else {[]})
-        let label = seed + "-" + target + (if selected {"-case31"} else {""})
-        let output = @shell.Cmd("moon",command).output()
-        @fs.write_file(logs + "/" + label + ".log",output.stdout()+output.stderr())
-        let text = output.stdout().trim().to_owned()
-        let key = seed + (if selected {"-case31"} else {""})
-        let mismatch = match references.get(key) {Some(expected) => expected!=text; None => false}
-        if output.exit_code()!=0 || mismatch {
-          let failed : Json = {"schema":"jieheng.generated-failure.v1","seed":seed,"count":32,
-            "target":target,"arguments":command,"stdout":output.stdout(),"stderr":output.stderr(),
-            "expected_stdout":match references.get(key) {Some(s) => Json::string(s);None => Json::null()},
-            "toolchain":versions.stdout(),"git_head":head.stdout().trim().to_owned(),
-            "working_tree_clean":status.stdout().trim().is_empty()}
-          @fs.write_file(logs + "/failure.json",failed.stringify()+"\n")
-          fail("generated check failed: \{label}; failure/replay details: \{logs}/failure.json")
+  for domain in ["pricing", "catalog"] {
+    for target in targets {
+      for seed in seeds {
+        for selected in [false, true] {
+          if selected && seed != "1" {
+            continue
+          }
+          let command = ["run", "cmd/generative", "--target", target, "--"] +
+            (if domain == "catalog" { ["catalog"] } else { [] }) +
+            [seed, "32"] +
+            (if selected { ["--case", "31"] } else { [] })
+          let label = domain +
+            "-" +
+            seed +
+            "-" +
+            target +
+            (if selected { "-case31" } else { "" })
+          let output = @shell.Cmd("moon", command).output()
+          @fs.write_file(
+            logs + "/" + label + ".log",
+            output.stdout() + output.stderr(),
+          )
+          let text = output.stdout().trim().to_owned()
+          let key = domain +
+            "-" +
+            seed +
+            (if selected { "-case31" } else { "" })
+          let mismatch = match references.get(key) {
+            Some(expected) => expected != text
+            None => false
+          }
+          if output.exit_code() != 0 || mismatch {
+            let failed : Json = {
+              "schema": "jieheng.generated-failure.v1",
+              "domain": domain,
+              "seed": seed,
+              "count": 32,
+              "target": target,
+              "arguments": command,
+              "stdout": output.stdout(),
+              "stderr": output.stderr(),
+              "expected_stdout": match references.get(key) {
+                Some(s) => Json::string(s)
+                None => Json::null()
+              },
+              "toolchain": versions.stdout(),
+              "git_head": head.stdout().trim().to_owned(),
+              "working_tree_clean": status.stdout().trim().is_empty(),
+            }
+            @fs.write_file(logs + "/failure.json", failed.stringify() + "\n")
+            fail(
+              "generated check failed: \{label}; failure/replay details: \{logs}/failure.json",
+            )
+          }
+          references[key] = text
+          results.push({
+            "domain": domain,
+            "seed": seed,
+            "target": target,
+            "selected_case": if selected {
+              Json(31)
+            } else {
+              Json::null()
+            },
+            "summary": text,
+          })
+          println("generated passed: \{label}: \{text}")
         }
-        references[key]=text
-        results.push({"seed":seed,"target":target,"selected_case":if selected {Json(31)} else {Json::null()},"summary":text})
-        println("generated passed: \{label}: \{text}")
       }
     }
   }
-  let result : Json = {"schema":"jieheng.generated-matrix.v1","cases_per_seed":32,"seeds":seeds,"targets":targets,
-    "git_head":head.stdout().trim().to_owned(),"working_tree_clean":status.stdout().trim().is_empty(),
-    "toolchain":versions.stdout(),"runs":results,"result":"passed"}
-  @fs.write_file(logs + "/result.json",result.stringify()+"\n")
+  let result : Json = {
+    "schema": "jieheng.generated-matrix.v1",
+    "domains": ["pricing", "catalog"],
+    "cases_per_seed": 32,
+    "seeds": seeds,
+    "targets": targets,
+    "git_head": head.stdout().trim().to_owned(),
+    "working_tree_clean": status.stdout().trim().is_empty(),
+    "toolchain": versions.stdout(),
+    "runs": results,
+    "result": "passed",
+  }
+  @fs.write_file(logs + "/result.json", result.stringify() + "\n")
   println("generated matrix passed; evidence: \{logs}/result.json")
 }
