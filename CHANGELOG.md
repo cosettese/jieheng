@@ -4,6 +4,8 @@
 
 This is a source release candidate; this file does not assert registry publication.
 
+- Refreshed ecosystem differentiation evidence includes current registry metadata, pinned public API comparisons, actual overlapping workflows and explicit unreviewed areas.
+
 - A separate seeded catalog domain checks daily migration spans/classifications and complete customer replay against bounded independent references, including fractional policy thresholds, zero baselines, mutation rejection and cross-backend replay.
 
 - CI retains per-stage JSON/log evidence on success or failure, including generated replay context, with isolated artifact names and explicit retention.
