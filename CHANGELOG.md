@@ -9,6 +9,7 @@ This is a source release candidate; this file does not assert registry publicati
 - Exact absolute and relative per-snapshot increase policies, including explicit zero-baseline behavior.
 - Existing v1 single-plan, evidence, bill and comparison exchanges retain their checked-in canonical output.
 - Packaging excludes development workspaces and nested consumer modules; package-archive consumption is checked independently.
+- Seeded generated correctness checks add independent bounded pricing/rounding/quota oracles, mutation rejection, one-case replay and backend fingerprint comparison.
 
 ## Earlier source milestones
 

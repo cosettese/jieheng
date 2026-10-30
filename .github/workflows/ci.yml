@@ -20,3 +20,4 @@ jobs:
       - run: moon update
       - run: moon run scripts/verify.mbtx all HEAD
       - run: moon run scripts/distribution.mbtx all archive
+      - run: moon run scripts/generative.mbtx all

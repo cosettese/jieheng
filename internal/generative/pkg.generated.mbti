@@ -1,0 +1,13 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "cosettese/jieheng/internal/generative"
+
+// Values
+pub fn run_generated(UInt32, Int32, only_case? : Int32) -> Json raise
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

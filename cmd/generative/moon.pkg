@@ -1,0 +1,6 @@
+import {
+  "cosettese/jieheng/internal/generative" @checks,
+  "moonbitlang/core/env",
+}
+
+pkgtype(kind: "executable")

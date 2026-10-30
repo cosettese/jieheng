@@ -23,6 +23,8 @@ The release verifier is project-authored `.mbtx` automation using MoonBit async 
 
 ## Ecosystem boundary
 
+The generated runner and integer-thousandth oracles are project-authored. Its xorshift32 operations are a conventional deterministic generator, not a claim of novel randomness or cryptographic security. No upstream property-test suite was copied; seeds, replay format and bounded input domain are documented in docs/generative.md.
+
 Distribution tooling uses moon package and standard archive tools, following official MoonBit .moonignore documentation. The consumer tests and executable quickstart are project-authored; no external release workflow or example implementation was copied. Archive testing is distinct from registry publication and installation.
 
 Multi-customer catalog replay and release thresholds are project-authored composition and exact-integer policy logic. Tests use independent forward bills and percent cross-product references, without copying an upstream suite. The example reuses the existing S3 price snapshot and hypothetical migration contract with synthetic customers/usages; aggregate savings do not imply every customer saves. Existing single-bill comparison JSON bytes remain covered by the end-to-end golden fixtures.
