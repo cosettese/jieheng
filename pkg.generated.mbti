@@ -12,6 +12,8 @@ pub fn audit_catalog_migration(Catalog, Catalog, String, String) -> CatalogMigra
 
 pub fn catalog_gaps(Catalog, String, String) -> Array[CatalogGap] raise PricingError
 
+pub fn check_replay_policy(Catalog, Catalog, ArrayView[CatalogReplayCase], CatalogReplay, ReplayPolicy, scale~ : Int32, rounding~ : Rounding) -> Unit raise PricingError
+
 pub fn compare_bills(ArrayView[BillItem], ArrayView[BillItem], scale~ : Int32, rounding~ : Rounding) -> BillComparison raise PricingError
 
 pub fn compare_cohort(Plan, Plan, ArrayView[Usage], scale~ : Int32, rounding~ : Rounding) -> CohortComparison raise PricingError
@@ -48,6 +50,8 @@ pub fn decode_catalog_bill(String) -> CatalogBill raise PricingError
 
 pub fn decode_catalog_migration(String) -> CatalogMigration raise PricingError
 
+pub fn decode_catalog_replay(String) -> CatalogReplay raise PricingError
+
 pub fn decode_charge(String) -> Charge raise PricingError
 
 pub fn decode_cohort(String) -> CohortComparison raise PricingError
@@ -69,6 +73,10 @@ pub fn decode_packages(String) -> PackageEvidence raise PricingError
 pub fn decode_plan(String) -> Plan raise PricingError
 
 pub fn decode_quota(String) -> QuotaQuote raise PricingError
+
+pub fn decode_replay_cases(String) -> Array[CatalogReplayCase] raise PricingError
+
+pub fn decode_replay_policy(String) -> ReplayPolicy raise PricingError
 
 pub fn decode_schedule(String) -> Schedule raise PricingError
 
@@ -100,6 +108,8 @@ pub fn encode_catalog_bill(CatalogBill) -> String raise PricingError
 
 pub fn encode_catalog_migration(CatalogMigration) -> String raise PricingError
 
+pub fn encode_catalog_replay(CatalogReplay) -> String raise PricingError
+
 pub fn encode_charge(Charge) -> String raise PricingError
 
 pub fn encode_cohort(CohortComparison) -> String raise PricingError
@@ -121,6 +131,10 @@ pub fn encode_packages(PackageEvidence) -> String raise PricingError
 pub fn encode_plan(Plan) -> String
 
 pub fn encode_quota(QuotaQuote) -> String raise PricingError
+
+pub fn encode_replay_cases(ArrayView[CatalogReplayCase]) -> String raise PricingError
+
+pub fn encode_replay_policy(ReplayPolicy) -> String raise PricingError
 
 pub fn encode_schedule(Schedule) -> String raise PricingError
 
@@ -152,6 +166,8 @@ pub fn rate_scheduled(Schedule, String, Usage, scale~ : Int32, rounding~ : Round
 
 pub fn render_bill_markdown(ArrayView[BillItem], Bill, scale~ : Int32, rounding~ : Rounding) -> String raise PricingError
 
+pub fn replay_catalogs(Catalog, Catalog, ArrayView[CatalogReplayCase], scale~ : Int32, rounding~ : Rounding) -> CatalogReplay raise PricingError
+
 pub fn select_plan(Schedule, String) -> Plan raise PricingError
 
 pub fn settle(Calculation, scale~ : Int32, rounding~ : Rounding) -> Settlement raise PricingError
@@ -171,6 +187,8 @@ pub fn verify_calculation(Plan, Usage, Calculation) -> Unit raise PricingError
 pub fn verify_catalog(Catalog, String, ArrayView[Usage], CatalogBill, scale~ : Int32, rounding~ : Rounding) -> Unit raise PricingError
 
 pub fn verify_catalog_migration(Catalog, Catalog, String, String, CatalogMigration) -> Unit raise PricingError
+
+pub fn verify_catalog_replay(Catalog, Catalog, ArrayView[CatalogReplayCase], CatalogReplay, scale~ : Int32, rounding~ : Rounding) -> Unit raise PricingError
 
 pub fn verify_charge(Plan, Usage, Charge, minimum~ : String, zero_usage~ : ZeroUsageMinimum, scale~ : Int32, rounding~ : Rounding) -> Unit raise PricingError
 
@@ -364,6 +382,41 @@ pub fn CatalogMigration::equal(Self, Self) -> Bool
 pub fn CatalogMigration::not_equal(Self, Self) -> Bool
 pub fn CatalogMigration::to_repr(Self) -> @debug.Repr
 
+pub(all) struct CatalogReplay {
+  currency : String
+  rows : Array[CatalogReplayRow]
+  baseline_exact : String
+  candidate_exact : String
+  baseline_settled : String
+  candidate_settled : String
+  exact_delta : String
+  settled_delta : String
+  increased : Int32
+  decreased : Int32
+  unchanged : Int32
+  max_increase : String
+  max_increase_index : Int32?
+} derive(Eq, @debug.Debug)
+pub fn CatalogReplay::equal(Self, Self) -> Bool
+pub fn CatalogReplay::not_equal(Self, Self) -> Bool
+pub fn CatalogReplay::to_repr(Self) -> @debug.Repr
+
+pub(all) struct CatalogReplayCase {
+  on : String
+  usages : Array[Usage]
+} derive(Eq, @debug.Debug)
+pub fn CatalogReplayCase::equal(Self, Self) -> Bool
+pub fn CatalogReplayCase::not_equal(Self, Self) -> Bool
+pub fn CatalogReplayCase::to_repr(Self) -> @debug.Repr
+
+pub(all) struct CatalogReplayRow {
+  on : String
+  comparison : BillComparison
+} derive(Eq, @debug.Debug)
+pub fn CatalogReplayRow::equal(Self, Self) -> Bool
+pub fn CatalogReplayRow::not_equal(Self, Self) -> Bool
+pub fn CatalogReplayRow::to_repr(Self) -> @debug.Repr
+
 pub(all) struct Charge {
   calculation : Calculation
   minimum : String
@@ -541,6 +594,15 @@ pub(all) struct QuotaQuote {
 pub fn QuotaQuote::equal(Self, Self) -> Bool
 pub fn QuotaQuote::not_equal(Self, Self) -> Bool
 pub fn QuotaQuote::to_repr(Self) -> @debug.Repr
+
+pub(all) struct ReplayPolicy {
+  currency : String
+  max_increase : String
+  max_increase_percent : String?
+} derive(Eq, @debug.Debug)
+pub fn ReplayPolicy::equal(Self, Self) -> Bool
+pub fn ReplayPolicy::not_equal(Self, Self) -> Bool
+pub fn ReplayPolicy::to_repr(Self) -> @debug.Repr
 
 pub(all) enum Rounding {
   HalfEven

@@ -2,6 +2,11 @@
 pub fn encode_bill_comparison(
   report : BillComparison,
 ) -> String raise PricingError {
+  bounded_json(bill_comparison_json(report))
+}
+
+///|
+fn bill_comparison_json(report : BillComparison) -> Json raise PricingError {
   if report.changes.length() == 0 || report.changes.length() > 64 {
     invalid(
       "size", "bill_comparison.changes", "expected 1 to 64 metric changes",
@@ -25,7 +30,7 @@ pub fn encode_bill_comparison(
     "exact_delta": report.exact_delta,
     "settled_delta": report.settled_delta,
   }
-  bounded_json(json)
+  json
 }
 
 ///|
@@ -33,8 +38,13 @@ pub fn encode_bill_comparison(
 pub fn decode_bill_comparison(
   text : String,
 ) -> BillComparison raise PricingError {
+  bill_comparison_from_json(parse_document(text))
+}
+
+///|
+fn bill_comparison_from_json(value : Json) -> BillComparison raise PricingError {
   let r = fields(
-    parse_document(text),
+    value,
     [
       "schema", "baseline", "candidate", "changes", "exact_delta", "settled_delta",
     ],

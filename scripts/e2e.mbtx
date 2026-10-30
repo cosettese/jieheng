@@ -318,5 +318,26 @@ async fn main {
   if migration_bad.exit_code() == 0 || migration_bad.stdout() != "" || !migration_bad.stderr().contains("changes") { fail("migration classification tampering must fail") }
   let migration_recovery = @shell.Cmd("moon", migration_args).output()
   if migration_recovery.exit_code() != 0 || migration_recovery.stdout() != migration.stdout() { fail("migration recovery failed") }
+  let replay_args = ["run", "cmd/replay", "--target", target, "--", "examples/catalog/catalog.json", "examples/migration/candidate.json", "examples/replay/cases.json", "2", "half-even"]
+  let replay = @shell.Cmd("moon", replay_args).output()
+  let replay_golden = @fs.read_file("examples/replay/report.json").text()
+  if replay.exit_code() != 0 || replay.stdout().trim() != replay_golden.trim() { fail("catalog replay mismatch: \{replay.stderr()}") }
+  let replay_checked = @shell.Cmd("moon", replay_args + ["--verify", "examples/replay/report.json", "--policy", "examples/replay/policy.json"]).output()
+  if replay_checked.exit_code() != 0 || replay_checked.stdout() != replay.stdout() { fail("verified replay policy workflow failed") }
+  let replay_blocked = @shell.Cmd("moon", replay_args + ["--policy", "examples/replay/strict-policy.json"]).output()
+  if replay_blocked.exit_code() != 2 || replay_blocked.stdout() != "" || !replay_blocked.stderr().contains("customer 'large'") { fail("aggregate savings must not hide an individual increase") }
+  @fs.write_file(tampered_path, replay_golden.replace(old="\"increased\":1",new="\"increased\":0"))
+  let replay_bad = @shell.Cmd("moon", replay_args + ["--verify", tampered_path]).output()
+  if replay_bad.exit_code() == 0 || replay_bad.stdout() != "" || !replay_bad.stderr().contains("replay.totals") { fail("replay distribution tampering must fail") }
+  let policy_text = @fs.read_file("examples/replay/policy.json").text()
+  @fs.write_file(tampered_path, policy_text.replace(old="\"max_increase_percent\":\"1\"",new="\"max_increase_percent\":\"0\""))
+  let replay_percent = @shell.Cmd("moon", replay_args + ["--policy", tampered_path]).output()
+  if replay_percent.exit_code() != 2 || replay_percent.stdout() != "" || !replay_percent.stderr().contains("customer 'large'") { fail("relative limit must be checked even when the absolute limit passes") }
+  let replay_cases = @fs.read_file("examples/replay/cases.json").text()
+  @fs.write_file(tampered_path, replay_cases.replace(old="\"schema\":",new="\"extension\":true,\"schema\":"))
+  let replay_unsupported = @shell.Cmd("moon", ["run", "cmd/replay", "--target", target, "--", "examples/catalog/catalog.json", "examples/migration/candidate.json", tampered_path, "2", "half-even"]).output()
+  if replay_unsupported.exit_code() == 0 || replay_unsupported.stdout() != "" || !replay_unsupported.stderr().contains("unsupported") { fail("unsupported replay input must be rejected") }
+  let replay_recovery = @shell.Cmd("moon", replay_args).output()
+  if replay_recovery.exit_code() != 0 || replay_recovery.stdout() != replay.stdout() { fail("replay recovery failed") }
   println("file workflow verified on \{target}")
 }

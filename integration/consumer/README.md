@@ -1,6 +1,6 @@
 # 从另一个模块采用 Jieheng
 
-这里是模块 `cosettese/jieheng-consumer`，不是主库中的另一个包。它通过 `moon.mod` 声明依赖 `cosettese/jieheng@0.7.0`，只使用公开 API。仓库根目录的 `moon.work` 将该依赖解析到当前源码，避免假设尚未发生的 Mooncakes 发布。
+这里是模块 `cosettese/jieheng-consumer`，不是主库中的另一个包。它通过 `moon.mod` 声明依赖 `cosettese/jieheng@0.8.0`，只使用公开 API。仓库根目录的 `moon.work` 将该依赖解析到当前源码，避免假设尚未发生的 Mooncakes 发布。
 
 从仓库根目录运行：
 
