@@ -88,12 +88,12 @@ fn migration_metrics(before : Catalog, after : Catalog) -> Array[String] {
 ///|
 fn selected_entry(
   c : Catalog,
-  metric : String,
+  indices : ArrayView[Int32],
   day : String,
-) -> Int32? raise PricingError {
-  for i, d in c.entries {
-    if tariff_info(d.entry.tariff).metric == metric &&
-      d.entry.starts_on <= day &&
+) -> Int32? {
+  for i in indices {
+    let d = c.entries[i]
+    if d.entry.starts_on <= day &&
       (
         d.entry.ends_before is None ||
         (d.entry.ends_before is Some(end) && day < end)
@@ -102,6 +102,23 @@ fn selected_entry(
     }
   }
   None
+}
+
+///|
+// Build once per operation. Keep original entry indices and catalog metric order;
+// only the hash lookup is shared, not the producer/verifier boundary algorithms.
+fn migration_timelines(
+  c : Catalog,
+) -> Map[String, Array[Int32]] raise PricingError {
+  let timelines : Map[String, Array[Int32]] = Map([])
+  for i, d in c.entries {
+    let metric = tariff_info(d.entry.tariff).metric
+    match timelines.get(metric) {
+      Some(indices) => indices.push(i)
+      None => timelines[metric] = [i]
+    }
+  }
+  timelines
 }
 
 ///|
@@ -210,13 +227,15 @@ pub fn audit_catalog_migration(
 ) -> CatalogMigration raise PricingError {
   migration_window(starts_on, ends_before)
   let spans : Array[MigrationSpan] = []
+  let before_timelines = migration_timelines(before)
+  let after_timelines = migration_timelines(after)
   for metric in migration_metrics(before, after) {
+    let bi = before_timelines.get(metric).unwrap_or([])
+    let ai = after_timelines.get(metric).unwrap_or([])
     let boundaries = [starts_on, ends_before]
-    for c in [before, after] {
-      for d in c.entries {
-        if tariff_info(d.entry.tariff).metric != metric {
-          continue
-        }
+    for (c, indices) in [(before, bi), (after, ai)] {
+      for index in indices {
+        let d = c.entries[index]
         for edge in [Some(d.entry.starts_on), d.entry.ends_before] {
           if edge is Some(s) &&
             starts_on < s &&
@@ -230,8 +249,8 @@ pub fn audit_catalog_migration(
     boundaries.sort()
     for i in 0..<(boundaries.length() - 1) {
       let start = boundaries[i]
-      let bi = selected_entry(before, metric, start)
-      let ai = selected_entry(after, metric, start)
+      let bi = selected_entry(before, bi[:], start)
+      let ai = selected_entry(after, ai[:], start)
       spans.push({
         metric,
         starts_on: start,
@@ -249,17 +268,15 @@ pub fn audit_catalog_migration(
 // Independent selection and next-boundary validation, without sorting or rating.
 fn checked_migration_boundary(
   c : Catalog,
-  metric : String,
+  indices : ArrayView[Int32],
   start : String,
   end : String,
   claimed : Int32?,
 ) -> String raise PricingError {
   let mut next = end
   let mut actual : Int32? = None
-  for i, d in c.entries {
-    if tariff_info(d.entry.tariff).metric != metric {
-      continue
-    }
+  for i in indices {
+    let d = c.entries[i]
     if d.entry.starts_on <= start &&
       (
         d.entry.ends_before is None ||
@@ -299,7 +316,11 @@ pub fn verify_catalog_migration(
     invalid("size", "migration.spans", "maximum 4096 spans")
   }
   let mut row = 0
+  let before_timelines = migration_timelines(before)
+  let after_timelines = migration_timelines(after)
   for metric in migration_metrics(before, after) {
+    let bi = before_timelines.get(metric).unwrap_or([])
+    let ai = after_timelines.get(metric).unwrap_or([])
     let mut cursor = starts_on
     while cursor < ends_before {
       if row >= report.spans.length() {
@@ -317,14 +338,14 @@ pub fn verify_catalog_migration(
       }
       let bnext = checked_migration_boundary(
         before,
-        metric,
+        bi[:],
         cursor,
         ends_before,
         s.baseline_entry,
       )
       let anext = checked_migration_boundary(
         after,
-        metric,
+        ai[:],
         cursor,
         ends_before,
         s.candidate_entry,

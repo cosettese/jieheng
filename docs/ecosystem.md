@@ -4,7 +4,7 @@
 
 ## 检索范围与不确定性
 
-- Mooncakes：执行 moon update 后审阅[官方 Git 索引](https://mooncakes.io/git/index)，快照为 ab6d913b6a43ae30d76770d5c249a457d569a5ba，提交时间 2026-10-30T10:13:35Z。对所有模块索引检索 pricing、billing、tiered、tariff、invoice、money、freight、计价、账单、阶梯，并读取命中模块的最新条目。注册表命中是候选筛选，不能单凭描述判断 API 等价。
+- Mooncakes：执行 moon update 后审阅[官方 Git 索引](https://mooncakes.io/git/index)，快照为 ab6d913b6a43ae30d76770d5c249a457d569a5ba，提交时间 2026-10-30T10:13:35Z。对所有模块索引检索 pricing、billing、tiered、tariff、invoice、money、freight、计价、账单、阶梯，并扩展 usage、cost、budget、rate.card、计费，读取命中模块的最新条目。注册表命中是候选筛选，不能单凭描述判断 API 等价。
 - GitHub 与网页：使用 MoonBit pricing billing tiered catalog migration，以及 site:mooncakes.io pricing billing money invoice tier catalog；进一步读取下列仓库默认分支快照的全部已提交 .mbti、许可证，以及相关源码和使用说明。
 - 未发布项目、其他托管平台、不同语言描述、未被搜索引擎索引的仓库及审阅后的更新仍可能遗漏。公开接口缺少某个名字不证明内部没有相似算法。若出现覆盖相同核心工作流和 API 边界的成熟项目，应重新审查范围。
 
@@ -25,6 +25,8 @@
 ## 新命中与后续复查
 
 注册表另命中 [aurum](https://github.com/Lyllyl789/aurum) 0.1.1（最小单位金额、现金流与贷款）、[moonbit-fixedincome](https://github.com/lwmvr/moonbit-fixedincome) 0.2.1（固收现金流定价）、[wagekit](https://github.com/JQ-ai-nb/wagekit) 0.3.0（工资与预扣税核对），以及贸易文档和 OFD 文档库。这些条目目前只做元信息筛选，尚未逐个深入审阅 API。注册表中的 lyyjavastudy/moonbit-freight-calculator 也指向上述 xvkong834 仓库，不能重复计为两个独立实现。
+
+扩展词还命中 vectie/moongate 0.1.3，以及 SLO 错误预算、差分隐私预算、路径代价、上下文配额和资源受限规则求值等模块。前者已纳入上表的源码与接口审阅；其余命中仍属于元信息筛选范围，没有据此认定其 API 功能边界。
 
 ## 已实现的独立贡献与验收入口
 

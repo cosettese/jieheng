@@ -1,5 +1,7 @@
 # Sources and licensing
 
+Migration per-operation timeline indexing and its interleaved-order regression were authored here; no cache/index implementation or tests were copied. The comparison reuses the existing synthetic-v1 benchmark fixtures and official core benchmark API. Original and candidate measurements are retained with actual source identities and shared-host limitations, without claiming general or Native speedups.
+
 The ecosystem boundary review was refreshed on 2026-10-30 in docs/ecosystem.md, using the updated Mooncakes Git index and commit-pinned upstream interfaces, relevant source and root licenses. These are research references, not code donors or dependencies; no upstream implementation or tests were incorporated. Earlier 2026-10-21 research below is retained as historical context.
 
 Catalog generation and its daily-selection, per-unit pricing, package-capacity, settlement and policy references were authored here without copying an external implementation or suite. Calendar fixtures explicitly encode Gregorian century/leap/year boundaries; all contracts, customers and usage are synthetic. These bounded oracles are testing evidence, not formal proofs or an assertion of novel algorithms.

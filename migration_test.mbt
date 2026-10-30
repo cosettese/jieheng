@@ -78,6 +78,85 @@ test "migration partitions both timelines and exposes gaps without losing unchan
 }
 
 ///|
+test "migration retains global indices and first-seen metric order across interleaved timelines" {
+  let entry = (metric : String, version : String, start : String, end : String?) => @jieheng.CatalogEntry::{
+    starts_on: start,
+    ends_before: end,
+    tariff: MeteredTariff(
+      @jieheng.compile_plan(
+        id=metric,
+        version~,
+        metric~,
+        unit="unit",
+        currency="USD",
+        tiers=[{ up_to: None, unit_price: "0.001", }],
+      ),
+      "0.000",
+      Charge,
+    ),
+  }
+  let z0 = entry("zeta", "v0", "2026-01-01", Some("2026-01-15"))
+  let a0 = entry("alpha", "v0", "2026-01-01", Some("2026-01-15"))
+  let z1 = entry("zeta", "v1", "2026-01-15", None)
+  let a1 = entry("alpha", "v1", "2026-01-15", None)
+  let before = @jieheng.compile_catalog([z0, a0, z1, a1])
+  let after = @jieheng.compile_catalog([a0, z0, a1, z1])
+  let report = @jieheng.audit_catalog_migration(
+    before, after, "2025-12-28", "2026-02-02",
+  )
+  assert_eq(report.spans.map(s => s.metric), [
+    "zeta", "zeta", "zeta", "alpha", "alpha", "alpha",
+  ])
+  assert_eq(report.spans[2].baseline_entry, Some(2))
+  assert_eq(report.spans[2].candidate_entry, Some(3))
+  assert_eq(report.spans[5].baseline_entry, Some(3))
+  assert_eq(report.spans[5].candidate_entry, Some(2))
+  assert_eq(report.spans[2].changes, [])
+  assert_eq(report.spans[0].changes, [@jieheng.BaselineGap, CandidateGap])
+  let archived = @jieheng.encode_catalog_migration(report)
+  @jieheng.verify_catalog_migration(
+    before,
+    after,
+    report.starts_on,
+    report.ends_before,
+    @jieheng.decode_catalog_migration(archived),
+  )
+  let damaged = report.spans.copy()
+  damaged[2] = { ..damaged[2], baseline_entry: Some(1), }
+  let diagnostic = try {
+    @jieheng.verify_catalog_migration(
+      before,
+      after,
+      report.starts_on,
+      report.ends_before,
+      { ..report, spans: damaged, },
+    )
+    "accepted"
+  } catch {
+    @jieheng.Invalid(code~, path~, ..) => code + ":" + path
+  }
+  assert_eq(diagnostic, "selection:migration.spans")
+  @jieheng.verify_catalog_migration(
+    before,
+    after,
+    report.starts_on,
+    report.ends_before,
+    report,
+  )
+  assert_eq(
+    @jieheng.encode_catalog_migration(
+      @jieheng.audit_catalog_migration(
+        before,
+        after,
+        report.starts_on,
+        report.ends_before,
+      ),
+    ),
+    archived,
+  )
+}
+
+///|
 test "migration treats semantic prices separately from labels and blocks mapping changes" {
   let p = priced("1")
   let one = (tariff : @jieheng.Tariff) => {

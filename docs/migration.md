@@ -24,6 +24,8 @@ moon run cmd/migration --target wasm -- examples/catalog/catalog.json examples/m
 
 verify_catalog_migration 不调用报告生成器：逐段检查连续覆盖、指标顺序、原始条目选择和下一个可能生效边界，拒绝删段、换序、伪造索引、篡改变化以及不必要拆段。语义分类复用同一规则定义，不能将它称作完全独立的第二套业务规则实现。
 
+生成与核验各自在本次操作中按指标建立原始条目索引，避免每个分段遍历其他指标并反复校验最低消费。指标仍按两个目录的首次出现顺序输出，索引仍指向原目录全局位置；元信息索引和分类规则复用，日期覆盖算法保持分别实现。此调整不改变公开接口、交换格式、输入边界或诊断。性能观察与完整原始记录见[同机对照](../benchmarks/comparisons/migration-index/README.md)。
+
 交换格式 jieheng.catalog-migration.v1 恰含 schema、starts_on、ends_before、spans。每段恰含 metric、starts_on、ends_before、baseline_entry、candidate_entry、changes。变化是上表字符串；未知字段、重复键和未知代码均拒绝。索引为 0..511 或 null；最多 4096 段、每段最多 12 个代码，文档上限仍为 1 Mi UTF-16 单元。解码只检查结构，接受归档前必须使用两个可信目录核验。日期沿用 0001..9999 年公历的现有范围。
 
 样例复用原有 S3 公开单价；把最低消费从 1500 改为 1400，并假设消息包从 10 月 17 日起变为每千条 0.95。两项变动和生效日期均为假设合同，不是供应商事实。报告揭示消息指标在 10 月 1 日至 17 日的候选空窗；17 日后的窗口结构兼容，但仍有价格和版本变化需要复核。
