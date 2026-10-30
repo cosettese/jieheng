@@ -82,6 +82,8 @@ let settlement = @jieheng.settle(calculation, scale=2, rounding=HalfEven)
 
 ## 开发与验证
 
+[验收索引与统一入口](docs/acceptance.md)：运行 `moon run scripts/acceptance.mbtx portable HEAD`，在同一提交的隔离快照中依次完成全部技术验证；`all HEAD` 增加 Native 实际运行。索引将已实现能力对应到 API、测试和可运行示例，并单列尚未完成的提交条件。
+
 [可复现交付验证](docs/release.md) 提供统一入口：`moon run scripts/verify.mbtx portable HEAD` 在只含 Git 已提交文件的新目录中运行格式、接口、严格检查、三个后端及端到端验证；`all HEAD` 增加 Native 实际运行，CI 在三个系统执行完整模式。
 
 使用 `moon.mod` / `moon.pkg`。当前验证工具链：稳定版 MoonBit v0.10.16+b1a0e846e，moon 0.1.20261020。CI 在 Linux、Windows、macOS 执行四种后端测试和示例。CI 配置代表预期覆盖，具体运行结果以 Actions 为准。
