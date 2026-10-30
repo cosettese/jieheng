@@ -19,3 +19,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: moon update
       - run: moon run scripts/verify.mbtx all HEAD
+      - run: moon run scripts/distribution.mbtx all archive

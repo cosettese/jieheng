@@ -1,0 +1,10 @@
+# Publishing policy replaces the root .gitignore for package archives.
+_build/
+/.moon/
+/.mooncakes/
+/.repos/
+/target/
+/moon.work
+/integration/
+/benchmarks/results/
+!/.moonignore
