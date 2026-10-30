@@ -18,7 +18,20 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: moon update
-      - run: moon run scripts/verify.mbtx all HEAD
-      - run: moon run scripts/distribution.mbtx all archive
-      - run: moon run scripts/generative.mbtx all
-      - run: moon run scripts/benchmark.mbtx all baseline
+      - name: Verify one source commit
+        run: moon run scripts/acceptance.mbtx all HEAD
+        env:
+          JIEHENG_EVIDENCE_DIR: ${{ runner.temp }}/jieheng-evidence
+      - name: Retain validation evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jieheng-${{ runner.os }}-${{ github.sha }}-${{ github.run_attempt }}
+          retention-days: 14
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/jieheng-evidence/**/*.json
+            ${{ runner.temp }}/jieheng-evidence/**/*.log
+            ${{ runner.temp }}/jieheng-evidence/**/*.txt
+            !${{ runner.temp }}/jieheng-evidence/**/source/**
+            !${{ runner.temp }}/jieheng-evidence/**/workspace/**

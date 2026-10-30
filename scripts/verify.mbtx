@@ -34,7 +34,15 @@ async fn main {
   let root_output = @shell.Cmd("git", ["rev-parse", "--show-toplevel"]).output()
   root_output.check()
   let root = root_output.stdout().trim().to_owned()
-  let logs = @fs.tmpdir(prefix="jieheng-verify-")
+  let logs = match @env.get_env_var("JIEHENG_EVIDENCE_DIR") {
+    Some(base) => {
+      let path = base + "/verify"
+      if @fs.exists(path) {fail("evidence directory already exists: \{path}")}
+      @fs.mkdir(path, recursive=true)
+      path
+    }
+    None => @fs.tmpdir(prefix="jieheng-verify-")
+  }
   println("verification logs: \{logs}")
   let mut directory = root
   let mut revision = "working-tree"

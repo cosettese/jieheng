@@ -1,5 +1,7 @@
 # Sources and licensing
 
+CI evidence upload uses actions/upload-artifact v4 (MIT, https://github.com/actions/upload-artifact) as an external action, without vendoring its implementation. Project-authored evidence-directory handling retains logs and JSON summaries while excluding cloned sources, build outputs and dependency workspaces from uploaded artifacts.
+
 The acceptance orchestrator and evidence index were authored for this project. It uses Git local clone/checkouts and existing MoonBit verification scripts; it does not copy a release framework, create synthetic commits, publish packages or assert organizer approval.
 
 The benchmark workloads and resource wrapper were written for this project, using synthetic prices and catalogs. Timing and summary statistics use moonbitlang/core/bench (Apache-2.0) through its public API; no upstream benchmark implementation or fixture was copied. GNU/BSD time output supplies whole-process RSS on supported hosts. The baseline makes no comparative performance claim.

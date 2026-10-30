@@ -8,7 +8,15 @@ import {
 async fn main {
   let args = @env.args()
   if args.length()!=2 || (args[1]!="portable" && args[1]!="all") {fail("usage: moon run scripts/generative.mbtx portable|all")}
-  let logs = @fs.tmpdir(prefix="jieheng-generative-")
+  let logs = match @env.get_env_var("JIEHENG_EVIDENCE_DIR") {
+    Some(base) => {
+      let path = base + "/generative"
+      if @fs.exists(path) {fail("evidence directory already exists: \{path}")}
+      @fs.mkdir(path, recursive=true)
+      path
+    }
+    None => @fs.tmpdir(prefix="jieheng-generative-")
+  }
   println("generative logs: \{logs}")
   let targets = if args[1]=="all" {["wasm","wasm-gc","js","native"]} else {["wasm","wasm-gc","js"]}
   let seeds = ["0","1","4294967295"]

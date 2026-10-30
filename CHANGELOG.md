@@ -4,6 +4,8 @@
 
 This is a source release candidate; this file does not assert registry publication.
 
+- CI retains per-stage JSON/log evidence on success or failure, including generated replay context, with isolated artifact names and explicit retention.
+
 - Unified technical acceptance runs all verification stages against one isolated commit and records stage failures and source identity; the evidence index maps implemented workflows to APIs, tests and examples.
 
 - Complete-window catalog migration audits: stable date partitions, explicit structural blockers and review changes, archived report verification and CLI gates.

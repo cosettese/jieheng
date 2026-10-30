@@ -80,7 +80,15 @@ async fn main {
   let sources : Array[Json] = files.mapi((i,p) => {"path":p,"git_blob":hashes[i]})
   let versions = scrub_versions(command("moon",["version","--all"]))
   let node = command("node",["--version"]).trim().to_owned()
-  let logs = @fs.tmpdir(prefix="jieheng-benchmark-")
+  let logs = match @env.get_env_var("JIEHENG_EVIDENCE_DIR") {
+    Some(base) => {
+      let path = base + "/benchmark"
+      if @fs.exists(path) {fail("evidence directory already exists: \{path}")}
+      @fs.mkdir(path, recursive=true)
+      path
+    }
+    None => @fs.tmpdir(prefix="jieheng-benchmark-")
+  }
   println("benchmark logs: \{logs}")
   let targets = if args[1]=="all" {["wasm","wasm-gc","js","native"]} else {["wasm","wasm-gc","js"]}
   let results : Array[Json] = []

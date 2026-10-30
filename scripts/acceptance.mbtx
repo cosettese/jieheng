@@ -17,7 +17,15 @@ async fn main {
   if (args.length()!=2 && args.length()!=3) || (args[1]!="portable" && args[1]!="all") {
     fail("usage: moon run scripts/acceptance.mbtx portable|all [COMMIT]; default HEAD; all actually runs Native")
   }
-  let logs = @fs.tmpdir(prefix="jieheng-acceptance-")
+  let logs = match @env.get_env_var("JIEHENG_EVIDENCE_DIR") {
+    Some(base) => {
+      let path = base + "/acceptance"
+      if @fs.exists(path) {fail("evidence directory already exists; choose a fresh JIEHENG_EVIDENCE_DIR")}
+      @fs.mkdir(path, recursive=true)
+      path
+    }
+    None => @fs.tmpdir(prefix="jieheng-acceptance-")
+  }
   println("acceptance evidence: \{logs}")
   let steps : Array[Json] = []
   let mut phase = "prepare"
@@ -45,7 +53,8 @@ async fn main {
     for (label, command) in workflow {
       phase = label
       println("acceptance: \{label}; source \{commit}")
-      let output = @shell.Cmd("moon",command,cwd=snapshot).output(max_output_bytes=8388608)
+      let output = @shell.Cmd("moon",command,cwd=snapshot,
+        env={"JIEHENG_EVIDENCE_DIR":logs+"/stages"}).output(max_output_bytes=8388608)
       @fs.write_file(logs + "/" + label + ".log",output.stdout()+output.stderr())
       steps.push({"stage":label,"arguments":command,"exit_code":output.exit_code(),"log":label+".log"})
       if output.exit_code()!=0 {fail("\{label} failed; inspect \{logs}/\{label}.log")}

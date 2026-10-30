@@ -22,7 +22,15 @@ async fn main {
   let root_result = @shell.Cmd("git",["rev-parse","--show-toplevel"]).output()
   root_result.check()
   let root = root_result.stdout().trim().to_owned()
-  let logs = @fs.tmpdir(prefix="jieheng-distribution-")
+  let logs = match @env.get_env_var("JIEHENG_EVIDENCE_DIR") {
+    Some(base) => {
+      let path = base + "/distribution"
+      if @fs.exists(path) {fail("evidence directory already exists: \{path}")}
+      @fs.mkdir(path, recursive=true)
+      path
+    }
+    None => @fs.tmpdir(prefix="jieheng-distribution-")
+  }
   println("distribution logs: \{logs}")
   let work = logs + "/workspace"
   let consumer = work + "/consumer"
