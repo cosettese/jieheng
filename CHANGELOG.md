@@ -1,8 +1,8 @@
 # Change log
 
-## 0.8.0 — current source version
+## 0.8.0 — published 2026-10-31
 
-This is a source release candidate; this file does not assert registry publication.
+Published to Mooncakes from source commit `4c85a4c2e2662f66b808300c802f78562383c6ee`. Independent registry consumption passed on Wasm, Wasm-GC and JavaScript; see [distribution verification](docs/distribution.md). The published archive predates this publication-status documentation update.
 
 - Migration auditing and verification build per-metric entry indices once per operation, preserving original indices, report bytes and diagnostics; alternating same-host before/after observations retain all benchmark workloads and variability.
 

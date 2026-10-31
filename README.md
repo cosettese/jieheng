@@ -33,7 +33,7 @@
 
 ## 使用
 
-模块名为 `cosettese/jieheng`。目前从源码使用；尚未发布到 Mooncakes。先阅读[可执行快速上手](quickstart.mbt.md)和 [API 兼容政策](docs/api-policy.md)。[独立消费模块](https://github.com/cosettese/jieheng/tree/main/integration/consumer) 展示源码工作区接入；[发行包验证](docs/distribution.md) 另行检查打包后的真实消费流程。开发仓库的 `moon.work` 同时测试主库和消费模块，发布包不携带此工作区。
+模块 `cosettese/jieheng@0.8.0` 已于 2026-10-31 发布到 [Mooncakes](https://mooncakes.io/docs/cosettese/jieheng)，并通过无本地源码覆盖的注册表安装验证。先阅读[可执行快速上手](quickstart.mbt.md)和 [API 兼容政策](docs/api-policy.md)。[独立消费模块](https://github.com/cosettese/jieheng/tree/main/integration/consumer) 展示接入方式；[发行包与注册表验证](docs/distribution.md) 说明完整验证流程。开发仓库的 `moon.work` 同时测试主库和消费模块，发布包不携带此工作区。
 
 ```text
 moon update
@@ -80,7 +80,7 @@ let settlement = @jieheng.settle(calculation, scale=2, rounding=HalfEven)
 
 ## 后续路线
 
-已形成“目录全窗口迁移审查 → 完整客户账单回放 → 涨额门禁”的工作流，并完成发行包与独立消费验证。可运行[固定种子生成式验证](docs/generative.md)检查组合边界、保存失败上下文并跨后端重放，以及[九项性能基线](docs/benchmarks.md)记录运行耗时、输入规模和可采集的平台内存。后续重点是实际接入反馈与相同环境下的性能跟踪；注册表发布暂缓。回放、生成测试和性能基线均只覆盖提供或生成的样本。
+已形成“目录全窗口迁移审查 → 完整客户账单回放 → 涨额门禁”的工作流，并完成发行包与注册表独立消费验证。可运行[固定种子生成式验证](docs/generative.md)检查组合边界、保存失败上下文并跨后端重放，以及[九项性能基线](docs/benchmarks.md)记录运行耗时、输入规模和可采集的平台内存。后续重点是实际接入反馈与相同环境下的性能跟踪。回放、生成测试和性能基线均只覆盖提供或生成的样本。
 
 ## 开发与验证
 

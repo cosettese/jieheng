@@ -2,6 +2,20 @@
 
 The module remains cosettese/jieheng. Its source version is recorded in moon.mod; a Git push is not a Mooncakes publication. Check the registry before assuming a particular version is installable.
 
+## Published 0.8.0
+
+On 2026-10-31, `cosettese/jieheng@0.8.0` was published from clean source commit `4c85a4c2e2662f66b808300c802f78562383c6ee` using the authorized `cosettese` account. The server returned HTTP 200. The dry-run server returned HTTP 202 with an explicit success message, although the CLI returned exit code 1 for that dry-run.
+
+`moon run scripts/distribution.mbtx portable registry` then passed in a fresh consumer directory with no local library copy or `moon.work`: strict checking for all targets, followed by two passing consumer workflow tests on each of Wasm, Wasm-GC and JavaScript. This registry run did not execute Native. The source commit's CI separately verifies Native execution; those are different checks.
+
+To install in a downstream module:
+
+~~~text
+moon add cosettese/jieheng@0.8.0
+~~~
+
+Import `cosettese/jieheng` in `moon.pkg` as shown in the [consumer example](../integration/consumer/moon.pkg). The publication archive contains the pre-publication README and changelog; this repository update records the successful release without republishing the same version.
+
 ## Verified archive
 
 ~~~text

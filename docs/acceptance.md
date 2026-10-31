@@ -42,9 +42,10 @@ acceptance.json 记录提交、Git 树、模式、各阶段命令和退出码。
 
 全部公开签名以编译器生成的 [pkg.generated.mbti](../pkg.generated.mbti) 为准。基线是合成负载的测量，不是生产容量承诺。来源、依赖和许可证见 [SOURCES.md](../SOURCES.md)。
 
+Mooncakes `0.8.0` 已于 2026-10-31 发布，并通过 Wasm、Wasm-GC、JavaScript 注册表独立消费验证；证据范围见[发行验证](distribution.md)。
+
 ## 尚未完成的提交条件
 
-- Mooncakes 注册表发布按项目所有者要求暂缓；archive 消费成功不等于注册表安装成功。
 - Gitlink 公开仓库及默认分支同步未核实。
 - 实际申报材料与当前实现的完整对应关系、当前赛事批次规则仍需确认。
 
